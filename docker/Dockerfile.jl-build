@@ -1,0 +1,7 @@
+# Build environment for JieLi AC63 SDK targets (BR25 / AC636N). x86_64 only (toolchain is x86_64 ELF).
+FROM --platform=linux/amd64 debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        make bash coreutils file xxd python3 ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+# Toolchain is mounted read-only at /opt/jieli (tools/jl-toolchain/jieli-linux-toolchains-*)
+WORKDIR /work

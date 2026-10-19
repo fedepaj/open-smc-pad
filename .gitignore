@@ -1,0 +1,26 @@
+# Build output and scratch
+work/
+build_logs/
+fw/smcpad/out/
+fw/smcpad/usb/smcpad_usb_build.h
+hw/jl-usbkey/build/
+host/bridge-rs/target/
+host/.venv*/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Vendor material: keep it on disk, never in the repository
+#  dumps/   flash dumps of the pad (stock firmware, device-specific data)
+#  vendor/  M-Vave firmware files
+#  re/bin, re/disasm, re/ghidra   vendor binaries and what we derived from them
+dumps/
+vendor/
+re/bin/
+re/disasm/
+re/ghidra/
+*.HEIC
+
+# JieLi toolchain and post-build tools: downloaded archives (see README)
+tools/jl-toolchain/
+tools/jl-postbuild/

@@ -1,0 +1,41 @@
+[submodule "sdk/AC696N_SDK_V1.7.0"]
+	path = sdk/AC696N_SDK_V1.7.0
+	url = https://github.com/Lingjia007/JL-AC696N_SDK_V1.7.0
+[submodule "sdk/fw-AC63_BT_SDK"]
+	path = sdk/fw-AC63_BT_SDK
+	url = https://github.com/Jieli-Tech/fw-AC63_BT_SDK
+	ignore = dirty
+[submodule "sdk/fw-AC63_GP_MCU"]
+	path = sdk/fw-AC63_GP_MCU
+	url = https://github.com/Jieli-Tech/fw-AC63_GP_MCU
+[submodule "sdk/fw-Bootloader"]
+	path = sdk/fw-Bootloader
+	url = https://github.com/Jieli-Tech/fw-Bootloader
+[submodule "tools/ghidra-jieli"]
+	path = tools/ghidra-jieli
+	url = https://github.com/kagaimiq/ghidra-jieli
+[submodule "tools/jielie"]
+	path = tools/jielie
+	url = https://github.com/kagaimiq/jielie
+[submodule "tools/jl-misctools"]
+	path = tools/jl-misctools
+	url = https://github.com/kagaimiq/jl-misctools
+[submodule "tools/jl-msbm"]
+	path = tools/jl-msbm
+	url = https://github.com/kagaimiq/jl-msbm
+[submodule "tools/jl-uboot-tool"]
+	path = tools/jl-uboot-tool
+	url = https://github.com/kagaimiq/jl-uboot-tool
+	ignore = dirty
+[submodule "third_party/tinyuf2"]
+	path = third_party/tinyuf2
+	url = https://github.com/adafruit/tinyuf2.git
+[submodule "third_party/tinyusb"]
+	path = third_party/tinyusb
+	url = https://github.com/hathach/tinyusb.git
+[submodule "ref/fm1-polyseq"]
+	path = ref/fm1-polyseq
+	url = https://github.com/NOVALENTI/fm1-polyseq
+[submodule "ref/smk37-firmware-custom-mod"]
+	path = ref/smk37-firmware-custom-mod
+	url = https://github.com/amalahama/smk37-firmware-custom-mod

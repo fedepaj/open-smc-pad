@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "ghydra": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "pydantic<2.11",
+        "/Users/federicopaglioni/Downloads/Ghydra-Complete-v3.0.0-rc.1-20260618-063536-ghidra12.1.2/bridge_mcp_hydra.py"
+      ],
+      "env": {}
+    }
+  }
+}

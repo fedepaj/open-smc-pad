@@ -1,0 +1,81 @@
+diff --git a/scsiio/__init__.py b/scsiio/__init__.py
+index 81c0043..efa10df 100755
+--- a/scsiio/__init__.py
++++ b/scsiio/__init__.py
+@@ -6,5 +6,9 @@ if sys.platform == 'win32':
+ elif sys.platform == 'linux':
+     from scsiio.linuxport import SCSIDev
+ 
++elif sys.platform == 'darwin':
++    # relayed through host/jl_usb_bridge.py (root); the device path is its socket
++    from scsiio.macport import SCSIDev
++
+ else:
+     raise ImportError("Platform '%s' is not supported (yet)" % sys.platform)
+diff --git a/scsiio/macport.py b/scsiio/macport.py
+new file mode 100644
+index 0000000..1a19896
+--- /dev/null
++++ b/scsiio/macport.py
+@@ -0,0 +1,61 @@
++from scsiio.common import *
++import socket, struct
++
++class SCSIDev(SCSIDevBase):
++    """
++    SCSI I/O for macOS, relayed through host/jl_usb_bridge.py (which has to run as root,
++    because only root may detach macOS's mass-storage driver).  The "device path" is the
++    bridge's Unix socket.
++    """
++
++    def open(self, path=None):
++        self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
++        self.sock.connect(path or self.path)
++        self.is_open = True
++
++    def close(self):
++        if self.is_open:
++            self.sock.close()
++            self.is_open = False
++
++    def _recv(self, n):
++        buf = b''
++        while len(buf) < n:
++            chunk = self.sock.recv(n - len(buf))
++            if not chunk:
++                raise SCSIException('bridge connection closed')
++            buf += chunk
++        return buf
++
++    def execute(self, cdb, data_out, data_in, max_sense_len=32, return_sense_buffer=False,
++                timeout=30000):
++        if data_out and data_in:
++            raise NotImplemented('Indirect I/O is not supported')
++
++        if data_out:
++            direction, length, payload = 1, len(data_out), bytes(data_out)
++        elif data_in:
++            direction, length, payload = 2, len(data_in), b''
++        else:
++            direction, length, payload = 0, 0, b''
++
++        cdb = bytes(cdb)
++        self.sock.sendall(struct.pack('<BBII', direction, len(cdb), length, timeout) + cdb + payload)
++
++        status, residue, n = struct.unpack('<BII', self._recv(9))
++        indata = self._recv(n)
++        m, = struct.unpack('<I', self._recv(4))
++        sense = self._recv(m)
++
++        if status != 0:
++            msg = 'Transfer failed: status %d' % status
++            if sense:
++                msg += '\nSense looks like this:\n' + sense.hex('.')
++            raise SCSIException(msg)
++
++        if data_in:
++            data_in[:len(indata)] = indata
++
++        if return_sense_buffer:
++            return residue, sense[:max_sense_len]
++        return residue

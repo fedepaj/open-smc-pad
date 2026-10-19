@@ -1,0 +1,16 @@
+[package]
+name = "smcpad-usb-bridge"
+version = "0.1.0"
+edition = "2021"
+description = "Root helper: relays SCSI commands to a JieLi chip in ROM download mode (UBOOT) over a Unix socket"
+publish = false
+
+[dependencies]
+# Vendored: libusb is compiled in. This binary runs as root through a sudoers rule, so it
+# must not load a libusb dylib from a user-writable place such as /opt/homebrew.
+rusb = { version = "0.9", features = ["vendored"] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

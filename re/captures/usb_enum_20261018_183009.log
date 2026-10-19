@@ -1,0 +1,505 @@
+[18:30:09.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100015a57, registered, matched, active, busy 0 (16 ms), retain 32>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100015a5b, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100015a5c, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100015a63, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o Brave Browser  <class AppleUSBHostDeviceUserClient, id 0x100015a5e, !registered, !matched, active, busy 0, retain 7>
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100015a61, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100015a67, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100015a68, !registered, !matched, active, busy 0, retain 7>
+---
+[18:34:50.3N] 
+---
+[18:35:02.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100015fb8, registered, matched, active, busy 1 (17 ms), retain 33>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100015fbc, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100015fbe, registered, matched, active, busy 0 (7 ms), retain 10>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100015fc2, registered, matched, active, busy 0 (1 ms), retain 5>
+  | |     "bInterfaceClass" = 1
+  | |     "bInterfaceSubClass" = 1
+  | +-o usbaudiod@00100000  <class AppleUSBHostFrameworkInterfaceClient, id 0x100015fc9, !registered, !matched, active, busy 0, retain 5>
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100015fc0, registered, matched, active, busy 0 (5 ms), retain 9>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100015fc5, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100015fc7, !registered, !matched, active, busy 0, retain 9>
+  +-o airportd  <class AppleUSBHostDeviceUserClient, id 0x100015fca, !registered, !matched, inactive, busy 0 (0 ms), retain 3>
+---
+[18:35:50.3N] 
+---
+[18:35:56.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100015ffa, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100015ffe, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016000, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100016006, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016004, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x10001600a, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x10001600b, !registered, !matched, active, busy 0, retain 7>
+---
+[18:44:58.3N] 
+---
+[18:45:00.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100016176, registered, matched, active, busy 0 (16 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x10001617a, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x10001617c, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x10001617f, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x10001617d, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100016182, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100016183, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:03.3N] 
+---
+[18:45:11.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100016191, registered, matched, active, busy 0 (18 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100016195, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016198, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x10001619d, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x10001619b, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x1000161a2, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x1000161a3, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:16.3N] 
+---
+[18:45:17.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000161ad, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x1000161b1, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x1000161b3, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x1000161b9, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x1000161b7, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x1000161bc, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x1000161bd, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:19.3N] 
+---
+[18:45:21.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "idVendor" = 17235 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000161c5, registered, matched, active, busy 2 (14 ms), retain 28>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x1000161ca, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x1000161cc, registered, !matched, active, busy 2 (5 ms), retain 7>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x1000161d1, !registered, !matched, active, busy 1 (0 ms), retain 6>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o configd  <class AppleUSBHostDeviceUserClient, id 0x1000161cd, !registered, !matched, active, busy 0, retain 6>
+  +-o systemstats  <class AppleUSBHostDeviceUserClient, id 0x1000161ce, !registered, !matched, active, busy 0, retain 7>
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x1000161cf, registered, matched, active, busy 0 (5 ms), retain 7>
+        "idProduct" = 19277
+        "bInterfaceSubClass" = 3
+        "USB Product Name" = "SINCO"
+        "idVendor" = 17235
+        "bInterfaceClass" = 1
+        "bNumEndpoints" = 2
+---
+[18:45:21.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000161c5, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x1000161ca, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x1000161cc, registered, matched, active, busy 0 (7 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x1000161d1, registered, matched, active, busy 0 (2 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x1000161cf, registered, matched, active, busy 0 (5 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x1000161d4, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x1000161d5, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:23.3N] 
+---
+[18:45:25.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000161dd, registered, matched, active, busy 0 (16 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x1000161e1, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x1000161e4, registered, matched, active, busy 0 (5 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x1000161e9, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x1000161e7, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x1000161ea, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x1000161eb, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:26.3N] 
+---
+[18:45:32.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000161f6, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x1000161fb, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x1000161fd, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100016202, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016200, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100016205, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100016206, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:33.3N] 
+---
+[18:45:38.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x10001620f, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100016213, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016214, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x10001621b, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016219, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x10001621f, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100016220, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:47.3N] 
+---
+[18:45:49.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x10001622b, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x10001622f, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016231, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100016235, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016233, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100016238, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100016239, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:52.3N] 
+---
+[18:45:54.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100016243, registered, matched, active, busy 0 (16 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100016247, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016249, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x10001624f, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x10001624d, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100016253, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100016254, !registered, !matched, active, busy 0, retain 7>
+---
+[18:45:59.3N] 
+---
+[18:46:04.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100016260, registered, matched, active, busy 0 (18 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100016264, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016266, registered, matched, active, busy 0 (7 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x10001626b, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016269, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x10001626c, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x10001626d, !registered, !matched, active, busy 0, retain 7>
+---
+[18:46:05.3N] 
+---
+[18:46:08.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x100016278, registered, matched, active, busy 0 (16 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x10001627c, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x10001627d, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100016284, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016282, registered, matched, active, busy 0 (5 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100016289, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x10001628a, !registered, !matched, active, busy 0, retain 7>
+---
+[18:46:14.3N] 
+---
+[18:47:46.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "idVendor" = 17235 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000162f9, registered, !matched, active, busy 1 (1 ms), retain 16>
+      "idProduct" = 19277
+      "USB Product Name" = "SINCO"
+      "idVendor" = 17235
+---
+[18:47:46.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x1000162f9, registered, matched, active, busy 0 (18 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x1000162fd, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x1000162fe, registered, matched, active, busy 0 (7 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x100016303, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016301, registered, matched, active, busy 0 (6 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x100016306, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x100016307, !registered, !matched, active, busy 0, retain 7>
+---
+[18:48:53.3N] 
+---
+[18:48:53.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "idVendor" = 17235 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x10001634f, registered, matched, active, busy 1 (3 ms), retain 18>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100016353, !registered, !matched, active, busy 0, retain 5>
+---
+[18:48:54.3N]  | "idProduct" = 19277  | "bcdDevice" = 256  | "USB Product Name" = "SINCO"  | "USB Vendor Name" = "Jieli Technology"  | "idVendor" = 17235  | "USB Serial Number" = "433132303730362E" 
++-o SINCO@00100000  <class IOUSBHostDevice, id 0x10001634f, registered, matched, active, busy 0 (17 ms), retain 29>
+  |   "idProduct" = 19277
+  |   "USB Product Name" = "SINCO"
+  |   "idVendor" = 17235
+  +-o AppleUSBHostCompositeDevice  <class AppleUSBHostCompositeDevice, id 0x100016353, !registered, !matched, active, busy 0, retain 4>
+  +-o SMC-PAD@0  <class IOUSBHostInterface, id 0x100016354, registered, matched, active, busy 0 (6 ms), retain 6>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 1
+  | |   "kUSBString" = "SMC-PAD"
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 0
+  | +-o AppleUSBAudioControlNub  <class AppleUSBAudioControlNub, id 0x10001635a, registered, matched, active, busy 0 (1 ms), retain 5>
+  |       "bInterfaceClass" = 1
+  |       "bInterfaceSubClass" = 1
+  +-o IOUSBHostInterface@1  <class IOUSBHostInterface, id 0x100016358, registered, matched, active, busy 0 (4 ms), retain 11>
+  | |   "idProduct" = 19277
+  | |   "USB Product Name" = "SINCO"
+  | |   "bInterfaceClass" = 1
+  | |   "bInterfaceSubClass" = 3
+  | |   "idVendor" = 17235
+  | |   "bNumEndpoints" = 2
+  | +-o MIDIServer  <class AppleUSBHostInterfaceUserClient, id 0x10001635b, !registered, !matched, active, busy 0, retain 6>
+  +-o MIDIServer  <class AppleUSBHostDeviceUserClient, id 0x10001635c, !registered, !matched, active, busy 0, retain 7>
+---
