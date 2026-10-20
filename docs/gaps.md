@@ -117,7 +117,6 @@ Running list for the open SMC-PAD firmware. Updated as we go.
 ## Hardware map still to confirm (see docs/hardware.md)
 
 - 595 /OE vs 4051 INH on PB5.
-- Button-LED row↔column wiring (7 GPIO rows × 595 columns), and which 595 output is which column.
 - MIDI OUT on PC5: through which UART/timer and at 31250 baud.
 - The 2 extra ADC conversions after the 16 pads (battery? internal temp?).
 
