@@ -272,6 +272,7 @@ c_SRC_FILES := \
 	../../../../third_party/tinyusb/src/common/tusb_fifo.c \
 	../../../../third_party/tinyusb/src/device/usbd.c \
 	../../../../third_party/tinyusb/src/class/cdc/cdc_device.c \
+	../../../../third_party/tinyusb/src/class/midi/midi_device.c \
 	../../../../third_party/tinyusb/src/class/dfu/dfu_device.c \
 	../../../../third_party/tinyusb/src/class/msc/msc_device.c \
 	../../../../apps/smcpad/board/br25/board_ac6363f_mouse.c \

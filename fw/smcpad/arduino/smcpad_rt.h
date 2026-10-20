@@ -30,6 +30,11 @@ int smcpad_serial_read(void);
 int smcpad_serial_peek(void);
 void smcpad_serial_flush(void);
 
+/* USB-MIDI (TinyUSB): 4-byte USB-MIDI event packets (cable/CIN, then 3 MIDI bytes) */
+int smcpad_usbmidi_write(const uint8_t packet[4]);     /* 1 when queued */
+int smcpad_usbmidi_read(uint8_t packet[4]);            /* 1 when one was waiting */
+void smcpad_usbmidi_flush(void);
+
 /* GPIO, by JieLi number: port * 16 + bit (PA0 = 0, PB0 = 16, PC0 = 32) */
 enum {
     SMCPAD_GPIO_INPUT = 0,

@@ -36,14 +36,20 @@ volatile int smcpad_usb_touch_1200;
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts)
 {
+    static bool was_open;
     cdc_line_coding_t coding;
 
     (void)itf;
     (void)rts;
     tud_cdc_get_line_coding(&coding);
-    if (!dtr && coding.bit_rate == 1200) {
+    /* Only a real touch: the port was open (DTR high) and is closed at 1200 baud. macOS
+     * remembers the last line coding -- 1200 after a touch -- and sends it with DTR low when
+     * the next firmware enumerates: taken as a touch, that sent every new sketch straight back
+     * into the bootloader. */
+    if (was_open && !dtr && coding.bit_rate == 1200) {
         smcpad_usb_touch_1200 = 1;
     }
+    was_open = dtr;
 }
 
 void smcpad_tusb_task(void)

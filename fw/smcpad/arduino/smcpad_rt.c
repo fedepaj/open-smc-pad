@@ -127,6 +127,23 @@ int smcpad_gpio_read(uint32_t gpio)
 /* ------------------------------------------------------------------ USB serial */
 #if SMCPAD_TINYUSB
 
+int smcpad_usbmidi_write(const uint8_t packet[4])
+{
+    tud_task();
+    return tud_mounted() && tud_midi_packet_write(packet);
+}
+
+int smcpad_usbmidi_read(uint8_t packet[4])
+{
+    tud_task();
+    return tud_midi_available() && tud_midi_packet_read(packet);
+}
+
+void smcpad_usbmidi_flush(void)
+{
+    tud_task();
+}
+
 int smcpad_serial_connected(void)
 {
     return tud_cdc_connected();

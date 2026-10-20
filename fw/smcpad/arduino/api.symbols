@@ -9,6 +9,9 @@ smcpad_serial_available
 smcpad_serial_read
 smcpad_serial_peek
 smcpad_serial_flush
+smcpad_usbmidi_write
+smcpad_usbmidi_read
+smcpad_usbmidi_flush
 smcpad_gpio_mode
 smcpad_gpio_write
 smcpad_gpio_read

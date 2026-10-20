@@ -1,4 +1,6 @@
-/* USB descriptors for the TinyUSB build: one CDC ACM function, the bring-up console. */
+/* USB descriptors for the TinyUSB build: CDC ACM (console / Arduino Serial) + USB-MIDI.
+ * Keep them stable: macOS treats a device whose descriptors change as a new accessory to approve
+ * (docs/bootloader.md). */
 #include "tusb.h"
 
 #if SMCPAD_TINYUSB
@@ -29,18 +31,21 @@ const uint8_t *tud_descriptor_device_cb(void)
     return (const uint8_t *)&desc_device;
 }
 
-enum { ITF_CDC = 0, ITF_CDC_DATA, ITF_TOTAL };
+enum { ITF_CDC = 0, ITF_CDC_DATA, ITF_MIDI, ITF_MIDI_STREAMING, ITF_TOTAL };
 
 /* IN and OUT on different endpoint numbers: one number for both directions shares the
  * controller's FIFO and DMA area, and IN packets then went out of the OUT side's buffer. */
 #define EP_CDC_NOTIF    0x81
 #define EP_CDC_OUT      0x02
 #define EP_CDC_IN       0x83
-#define CONFIG_LEN      (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN)
+#define EP_MIDI_OUT     0x04
+#define EP_MIDI_IN      0x84
+#define CONFIG_LEN      (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MIDI_DESC_LEN)
 
 static const uint8_t desc_config[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_TOTAL, 0, CONFIG_LEN, 0x00, 100),
     TUD_CDC_DESCRIPTOR(ITF_CDC, 4, EP_CDC_NOTIF, 8, EP_CDC_OUT, EP_CDC_IN, 64),
+    TUD_MIDI_DESCRIPTOR(ITF_MIDI, 5, EP_MIDI_OUT, EP_MIDI_IN, 64),
 };
 
 const uint8_t *tud_descriptor_configuration_cb(uint8_t index)
@@ -55,6 +60,7 @@ static const char *const strings[] = {
     "SMC-PAD open fw",
     "0001",
     "SMC-PAD console",
+    "SMC-PAD MIDI",
 };
 
 const uint16_t *tud_descriptor_string_cb(uint8_t index, uint16_t langid)

@@ -24,7 +24,10 @@
 
 #define CFG_TUD_MSC                 0
 #define CFG_TUD_HID                 0
-#define CFG_TUD_MIDI                0
+#define CFG_TUD_MIDI                1
+#define CFG_TUD_MIDI_RX_BUFSIZE     256
+#define CFG_TUD_MIDI_TX_BUFSIZE     256
+#define CFG_TUD_MIDI_EP_BUFSIZE     64
 #define CFG_TUD_VENDOR              0
 #define CFG_TUD_DFU                 0
 
