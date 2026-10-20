@@ -25,7 +25,11 @@ APP="$ROOT/fw/smcpad"
 OUT="$APP/out"
 mkdir -p "$OUT" "$ROOT/build_logs"
 # USB stack: SMCPAD_TINYUSB=1 builds with TinyUSB and our BR25 driver (fw/smcpad/usb).
-printf '#define SMCPAD_TINYUSB %s\n' "${SMCPAD_TINYUSB:-0}" > "$APP/usb/smcpad_usb_build.h"
+# Where the app area (directory) sits in flash, derived from TEXT_BASE: 0x1000 alone, 0x9000 behind
+# the bootloader (fw/boot).
+APP_DIR=$(printf '0x%x' $((TEXT_BASE - 0x1E00120 + 0x1000)))
+{ printf '#define SMCPAD_TINYUSB %s\n' "${SMCPAD_TINYUSB:-0}"
+  printf '#define SMCPAD_APP_DIR %s\n' "$APP_DIR"; } > "$APP/usb/smcpad_usb_build.h"
 echo "USB stack: $([ "${SMCPAD_TINYUSB:-0}" = 1 ] && echo TinyUSB || echo JieLi SDK)"
 
 docker image inspect jl-build >/dev/null 2>&1 || \

@@ -31,6 +31,7 @@
 #include "asm/hwi.h"                     /* bit_clr_ie, IRQ_USB_*_IDX */
 #include "asm/usb.h"                     /* USB_IO_CON0 bits */
 #include "update.h"
+#include "smcpad_usb_cfg.h"               /* SMCPAD_APP_DIR (fw/build.sh) */
 
 extern void smcpad_trace(const char *tag);
 extern int smcpad_dbg_ready(void);
@@ -1325,8 +1326,8 @@ static void cmd_flash_silent(u32 addr)
  * physical bytes, app directory first.
  */
 #define UPDATE_STAGING      0x40000
-#define UPDATE_DST          0x1000
-#define UPDATE_AREA_LEN     0x25000             /* 0x1000..0x26000, as flash_fw.sh erases it */
+#define UPDATE_DST          SMCPAD_APP_DIR
+#define UPDATE_AREA_LEN     0x25000             /* as much as flash_fw.sh erases at 0x1000 */
 #define UPDATE_CHUNK_MAX    1024
 
 extern int smcpad_flash_copy_and_reset(u32 dst, u32 src, u32 len, u32 erase_len);
@@ -1882,6 +1883,19 @@ static void run_command(const char *line)
         break;
     }
 #if SMCPAD_TINYUSB
+    case 'I': {
+        /* what the uboot handed over (boot_info_init copies it from the struct in r0) */
+        extern u32 boot_info[];
+        static const char *const names[] = { "vm.align", "vm.saddr", "vm.res", "vm.size",
+                                             "sfc_base_addr", "app_addr", "flash_size",
+                                             "chip_id|trim<<16", "mac0", "mac1" };
+
+        for (int i = 0; i < 10; i++) {
+            say_kv_hex(names[i], boot_info[i]);
+        }
+        say_kv_hex("SFC BASE_ADR reg", *(volatile u32 *)0x1F020C);
+        break;
+    }
     case 'G': {
         /* per 64-byte block of the last uw chunk: first byte, last byte, bytes != first */
         for (int blk = 0; blk < 16; blk++) {

@@ -6,4 +6,8 @@
 #ifndef SMCPAD_TINYUSB
 #define SMCPAD_TINYUSB 0
 #endif
+/* Flash offset of our app area's directory (0x1000, or 0x9000 behind the bootloader). */
+#ifndef SMCPAD_APP_DIR
+#define SMCPAD_APP_DIR 0x1000
+#endif
 #endif

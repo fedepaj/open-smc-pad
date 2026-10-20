@@ -35,7 +35,11 @@ OUR_NAME_TUSB="SMC-PAD open fw"         # ... with TinyUSB (pid.codes test id 12
 case "$MODE" in
     fw)    IMAGE="$ROOT/work/flash/fw_area_raw.bin"
            EXPECTED="$ROOT/work/flash/expected_with_fw.bin"
-           VERIFY="$ROOT/work/flash/verify_last.bin" ;;
+           VERIFY="$ROOT/work/flash/verify_last.bin"
+           # the image may reach past 0x26000 (bootloader + application, host/package_fw.sh)
+           size=$(wc -c < "$IMAGE")
+           len=$(( (size + 0xFFF) / 0x1000 * 0x1000 ))
+           [ $len -gt $((AREA_LEN)) ] && AREA_LEN=$(printf '0x%x' $len) ;;
     stock) IMAGE="$ROOT/work/restore/code_0x1000_0x26000.bin"
            EXPECTED="$ROOT/dumps/original_physical_full.bin"
            VERIFY="$ROOT/work/restore/verify_last.bin" ;;

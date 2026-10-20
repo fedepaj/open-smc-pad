@@ -8,7 +8,7 @@ part, a stray alignment, the wrong order) produces a file that looks fine and a 
 hangs before it can tell you anything.  This reads those addresses back out of the crt0
 and checks they point where the parts actually landed in the file.
 
-    python3 host/check_appbin.py [fw/smcpad/out/sdk.elf] [fw/smcpad/out/app.bin]
+    [TEXT_BASE=0x1E08120] python3 host/check_appbin.py [fw/smcpad/out/sdk.elf] [fw/smcpad/out/app.bin]
 
 The pi32v2 crt0 starts with (see re/disasm/app004.dis for the stock one):
     sp = X / ssp = X / call ... / <zero .bss> / then, per copied section:
@@ -16,12 +16,13 @@ The pi32v2 crt0 starts with (see re/disasm/app004.dis for the stock one):
     c1 ff <u32 src>       r1 = source, an absolute flash address
     c2 ff <u32 size>      r2 = byte count
 """
+import os
 import struct
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TEXT_VMA = 0x1E00120
+TEXT_VMA = int(os.environ.get("TEXT_BASE", "0x1E00120"), 0)     # as fw/build.sh linked it
 
 
 def elf_sections(data):
