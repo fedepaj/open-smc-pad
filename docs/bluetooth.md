@@ -1,7 +1,11 @@
 # Bluetooth: BLE-MIDI
 
-Status (2026-10-20): the stack comes up and advertises; not yet tested from a central (needs
-the macOS Bluetooth permission / Audio MIDI Setup, i.e. hands at the Mac).
+Status (2026-10-20): **works end to end with macOS.** Scan (bleak): "SMC-PAD" with the MIDI
+service UUID, RSSI -40. GATT: the MIDI characteristic with read / write-without-response /
+notify, empty read; BLE-MIDI written to it is parsed on the pad. Audio MIDI Setup > Bluetooth
+> Connect gives a CoreMIDI port "SMC-PAD Bluetooth"; with the console's `K` the pads arrive as
+note on/off pairs, notes 36..51, velocity following the pressure (44 messages in 60 s of
+playing, none lost). USB (CDC console) keeps working alongside.
 
 The stock firmware does standard **BLE-MIDI** (its image carries the service
 `03B80E5A-EDE8-4B33-A751-6CE34EC4C700` and characteristic
