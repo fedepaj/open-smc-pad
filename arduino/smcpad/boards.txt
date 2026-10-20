@@ -1,0 +1,14 @@
+smcpad.name=M-Vave SMC-PAD (open firmware)
+smcpad.build.board=SMCPAD
+smcpad.build.core=smcpad
+smcpad.build.variant=smcpad
+smcpad.build.extra_flags=
+smcpad.upload.tool=dfu-util
+smcpad.upload.tool.default=dfu-util
+smcpad.upload.protocol=dfu
+smcpad.upload.use_1200bps_touch=true
+smcpad.upload.wait_for_upload_port=false
+smcpad.upload.maximum_size=425984
+smcpad.upload.maximum_data_size=0
+smcpad.vid.0=0x1209
+smcpad.pid.0=0x0001

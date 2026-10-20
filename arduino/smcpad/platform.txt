@@ -1,0 +1,50 @@
+# Arduino platform for the M-Vave SMC-PAD (JieLi AC6966C / BR25, open firmware + bootloader)
+# https://arduino.github.io/arduino-cli/latest/platform-specification/
+
+name=SMC-PAD (open firmware)
+version=0.1.0
+
+# toolchain: JieLi pi32v2 (clang 4 + GNU ld), run through tools/jl.sh (native on Linux x86-64,
+# blink on macOS)
+tools.jl.cmd={runtime.platform.path}/tools/jl.sh
+tools.jl.sysroot={runtime.platform.path}/tools/toolchain/pi32v2
+
+compiler.warning_flags=-w
+compiler.warning_flags.none=-w
+compiler.warning_flags.default=
+compiler.warning_flags.more=-Wall
+compiler.warning_flags.all=-Wall -Wextra
+
+# -enable-ipra=false: the JieLi clang otherwise trusts the body of a weak default across a call
+# (docs/bootloader.md, "Pitfalls"); the core is not LTO, so the strong definition is not seen.
+compiler.common.flags=-target pi32v2 -mcpu=r3 -integrated-as -Oz -fno-common -ffunction-sections -fdata-sections -mllvm -enable-ipra=false -isystem "{tools.jl.sysroot}/include" "-I{runtime.platform.path}/system/include"
+compiler.c.flags={compiler.common.flags} -std=gnu11 {compiler.warning_flags}
+compiler.cpp.flags={compiler.common.flags} -std=gnu++14 -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit {compiler.warning_flags}
+compiler.S.flags={compiler.common.flags} -x assembler-with-cpp
+compiler.defines=-DARDUINO={runtime.ide.version} -DARDUINO_{build.board} -DARDUINO_ARCH_{build.arch} -DSMCPAD
+
+compiler.c.extra_flags=
+compiler.cpp.extra_flags=
+compiler.ld.extra_flags=
+
+recipe.c.o.pattern="{tools.jl.cmd}" clang {compiler.c.flags} {compiler.defines} {compiler.c.extra_flags} {build.extra_flags} {includes} -c "{source_file}" -o "{object_file}"
+recipe.cpp.o.pattern="{tools.jl.cmd}" clang++ {compiler.cpp.flags} {compiler.defines} {compiler.cpp.extra_flags} {build.extra_flags} {includes} -c "{source_file}" -o "{object_file}"
+recipe.S.o.pattern="{tools.jl.cmd}" clang {compiler.S.flags} {compiler.defines} {build.extra_flags} {includes} -c "{source_file}" -o "{object_file}"
+recipe.ar.pattern="{tools.jl.cmd}" ar rcs "{archive_file_path}" "{object_file}"
+
+# the sketch + core + libraries against the precompiled SDK object (system/, from
+# arduino/make_system.sh): plain ld, no LTO
+recipe.c.combine.pattern="{tools.jl.cmd}" ld -o "{build.path}/{build.project_name}.elf" {object_files} "{build.path}/{archive_file}" "{runtime.platform.path}/system/smcpad_core.o" --start-group "{runtime.platform.path}/system/libsmcpad_native.a" "{tools.jl.sysroot}/lib/r3/libc.a" "{tools.jl.sysroot}/lib/r3/libm.a" "{tools.jl.sysroot}/lib/r3/libcompiler-rt.a" --end-group "-T{runtime.platform.path}/system/sdk.ld" --gc-sections --sort-common --dont-complain-call-overflow {compiler.ld.extra_flags}
+
+# ELF -> app area for the bootloader (flash 0x9000)
+recipe.objcopy.bin.pattern=python3 "{runtime.platform.path}/tools/smcpad_pack.py" "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+
+recipe.size.pattern=python3 "{runtime.platform.path}/tools/smcpad_pack.py" "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.size.bin" --size
+recipe.size.regex=Sketch uses ([0-9]+) bytes
+recipe.size.regex.data=^$
+
+# upload: 1200-baud touch on the sketch's serial port -> the bootloader comes up as DFU 1209:0002
+tools.dfu-util.cmd=dfu-util
+tools.dfu-util.upload.params.verbose=
+tools.dfu-util.upload.params.quiet=
+tools.dfu-util.upload.pattern="{cmd}" -w -d 1209:0002 -a 0 -D "{build.path}/{build.project_name}.bin"

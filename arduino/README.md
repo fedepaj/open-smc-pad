@@ -1,5 +1,20 @@
 # Arduino core for the SMC-PAD (work in progress)
 
+## Use it (development install, macOS / Linux x86-64)
+
+    SMCPAD_ARDUINO=1 SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh   # the precompiled core
+    arduino/make_system.sh                                             # -> arduino/smcpad/system, tool links
+    mkdir -p ~/Documents/Arduino/hardware/smcpad
+    ln -sfn $PWD/arduino/smcpad ~/Documents/Arduino/hardware/smcpad/br25
+    arduino-cli compile --fqbn smcpad:br25:smcpad MySketch
+    arduino-cli upload  --fqbn smcpad:br25:smcpad -p /dev/cu.usbmodemXXXX MySketch
+
+Board "M-Vave SMC-PAD (open firmware)" then also shows up in the Arduino IDE. On macOS the JieLi
+tools run under blink (interpreter mode): a first build (core included) ~30 s, then ~7 s;
+upload (1200-baud touch, dfu-util, restart) ~9 s. Needs `python3` and `dfu-util` on the PATH.
+
+## How it is built
+
 Build model, verified on the pad (2026-10-20):
 
 1. **Once, by us** -- `SMCPAD_ARDUINO=1 SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh`: the JieLi
