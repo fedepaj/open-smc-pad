@@ -170,6 +170,7 @@ INCLUDES := \
 	-I../../../../apps/smcpad/include \
 	-I../../../../apps/smcpad/board/br25 \
 	-I../../../../apps/smcpad/usb \
+	-I../../../../apps/smcpad/arduino \
 	-I../../../../third_party/tinyusb/src \
 	-I../../../../apps/common \
 	-I../../../../apps/common/include \
@@ -295,6 +296,8 @@ c_SRC_FILES := \
 	../../../../apps/smcpad/examples/idle/app_idle.c \
 	../../../../apps/smcpad/examples/smcpad_test/smcpad_bringup.c \
 	../../../../apps/smcpad/examples/smcpad_test/smcpad_pads.c \
+	../../../../apps/smcpad/arduino/smcpad_rt.c \
+	../../../../apps/smcpad/arduino/smcpad_arduino.c \
 	../../../../apps/smcpad/examples/keyboard/app_keyboard.c \
 	../../../../apps/smcpad/examples/keyfob/app_keyfob.c \
 	../../../../apps/smcpad/examples/keypage/app_keypage.c \
@@ -374,7 +377,7 @@ cxx_SRC_FILES :=
 
 
 # 链接参数
-LFLAGS := \
+LFLAGS := $(SMCPAD_LFLAGS) \
 	--plugin-opt=-pi32v2-always-use-itblock=false \
 	--plugin-opt=-enable-ipra=true \
 	--plugin-opt=-pi32v2-merge-max-offset=4096 \

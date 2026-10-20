@@ -1700,13 +1700,8 @@ static void cmd_jump_to_rom(void)
     __JUMP_TO_MASKROM();
 }
 
-/*
- * Our bootloader (fw/boot) in front of us: reset into its DFU mode. It looks for this word at
- * UPDATA_BEG (kept across the reset) and clears it, so a reset from DFU mode comes back here.
- * Off the bus first, as `J` does it, so the host sees us go before the bootloader appears.
- */
-#define BOOT_MAGIC_ADDR     0x31AE0u                /* = UPDATA_BEG, fw/boot/boot.h */
-#define BOOT_MAGIC_DFU      0xB007DF00u
+/* Our bootloader (fw/boot): reset into its DFU mode (smcpad_rt.c). */
+#include "smcpad_rt.h"
 
 static void cmd_enter_bootloader(void)
 {
@@ -1715,23 +1710,7 @@ static void cmd_enter_bootloader(void)
 #else
     smcpad_dbg_puts("resetting into the bootloader (DFU)\r\n");
     smcpad_delay_ms(200);
-    local_irq_disable();
-    JL_USB->CON0 = 0;
-    JL_USB_IO->CON0 &= ~(BIT(DPPU) | BIT(DMPU) | BIT(DPPD) | BIT(DMPD));
-    *(volatile u32 *)BOOT_MAGIC_ADDR = BOOT_MAGIC_DFU;
-    for (volatile u32 i = 0; i < 3000000; i++) {
-    }
-    cpu_reset();
-#endif
-}
-
-/* 1200-baud touch (smcpad_dbg_read sees it): the Arduino way into the uploader. */
-void smcpad_on_touch_1200(void)
-{
-#if SMCPAD_APP_DIR == 0x1000
-    cmd_jump_to_rom();
-#else
-    cmd_enter_bootloader();
+    smcpad_enter_bootloader();
 #endif
 }
 
@@ -2078,15 +2057,6 @@ static void run_command(const char *line)
         break;
     }
     smcpad_dbg_puts("> ");
-}
-
-/* Tell the bootloader (fw/boot) this boot worked: clear its crash-loop counter, which it
- * keeps at 0x31AD8 (count, count ^ 0x5A5AB007; fw/boot/boot.h BOOT_COUNT). Four boots in a row
- * that never get here and it stays in DFU mode instead of starting us again. */
-static void smcpad_boot_ok(void)
-{
-    ((volatile u32 *)0x31AD8)[0] = 0;
-    ((volatile u32 *)0x31AD8)[1] = 0;
 }
 
 void smcpad_bringup_start(void)

@@ -3,6 +3,7 @@
 #include "server/server_core.h"
 #include "app_config.h"
 #include "app_action.h"
+#include "smcpad_usb_cfg.h"
 
 #define LOG_TAG_CONST       APP_IDLE
 #define LOG_TAG             "[APP_IDLE]"
@@ -26,7 +27,12 @@ extern void smcpad_trace(const char *tag);
 
 static void console_task(void *priv)
 {
+#if SMCPAD_ARDUINO
+    extern void smcpad_arduino_run(void);
+    smcpad_arduino_run();                   /* setup(), loop() forever */
+#else
     smcpad_bringup_start();                 /* never returns */
+#endif
 }
 
 static void idle_app_start()
