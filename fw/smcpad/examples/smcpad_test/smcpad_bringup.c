@@ -672,6 +672,7 @@ static void cmd_help(void)
         "  F <sector>        erase+write+verify one free sector (0x27000..0x74000)\r\n"
         "  U [hex]           reset into bootloader update mode (default 5a00 = USB)\r\n"
         "  J                 drop off USB and jump to the mask ROM (download mode if keyed)\r\n"
+        "  B                 reset into our bootloader's DFU mode (1200-baud touch does the same)\r\n"
         "  X <mode> [n] [sector]  flash-death bisection: 0 irq-off spin, 1 +SFC off/on,\r\n"
         "                    2 +status polls, 3 +WREN/WRDI, 4 +real erase\r\n"
         "  ub/uw/uv/uc       firmware update (host/update.py drives these)\r\n"
@@ -1692,6 +1693,31 @@ static void cmd_jump_to_rom(void)
 }
 
 /*
+ * Our bootloader (fw/boot) in front of us: reset into its DFU mode. It looks for this word at
+ * UPDATA_BEG (kept across the reset) and clears it, so a reset from DFU mode comes back here.
+ * Off the bus first, as `J` does it, so the host sees us go before the bootloader appears.
+ */
+#define BOOT_MAGIC_ADDR     0x31AE0u                /* = UPDATA_BEG, fw/boot/boot.h */
+#define BOOT_MAGIC_DFU      0xB007DF00u
+
+static void cmd_enter_bootloader(void)
+{
+#if SMCPAD_APP_DIR == 0x1000
+    smcpad_dbg_puts("no bootloader in this layout (built for 0x1000)\r\n");
+#else
+    smcpad_dbg_puts("resetting into the bootloader (DFU)\r\n");
+    smcpad_delay_ms(200);
+    local_irq_disable();
+    JL_USB->CON0 = 0;
+    JL_USB_IO->CON0 &= ~(BIT(DPPU) | BIT(DMPU) | BIT(DPPD) | BIT(DMPD));
+    *(volatile u32 *)BOOT_MAGIC_ADDR = BOOT_MAGIC_DFU;
+    for (volatile u32 i = 0; i < 3000000; i++) {
+    }
+    cpu_reset();
+#endif
+}
+
+/*
  * Ask the bootloader to come up in update mode instead of running us, then reset.
  *
  * The SDK passes this through a reserved RAM block: an UPDATA_PARM whose parm_type is one of
@@ -1894,6 +1920,11 @@ static void run_command(const char *line)
             say_kv_hex(names[i], boot_info[i]);
         }
         say_kv_hex("SFC BASE_ADR reg", *(volatile u32 *)0x1F020C);
+        /* what the bootloader's last DFU session left (fw/boot/boot.h struct boot_diag) */
+        static const char *const dnames[] = { "boot.magic", "boot.ms", "boot.polls", "boot.usb_con0",
+                                              "boot.clk_con1", "boot.pll_con", "boot.events",
+                                              "boot.blocks", "boot.last_error" };
+        for (int i = 0; i < 9; i++) say_kv_hex(dnames[i], ((volatile u32 *)0x31AA0)[i]);
         break;
     }
     case 'G': {
@@ -1940,6 +1971,9 @@ static void run_command(const char *line)
         break;
     case 'J':
         cmd_jump_to_rom();
+        break;
+    case 'B':
+        cmd_enter_bootloader();
         break;
     case 'Z':
         smcpad_dbg_puts("resetting\r\n");
@@ -2016,7 +2050,11 @@ void smcpad_bringup_start(void)
             extern volatile int smcpad_usb_touch_1200;
 
             if (smcpad_usb_touch_1200) {
+#if SMCPAD_APP_DIR == 0x1000
                 cmd_jump_to_rom();
+#else
+                cmd_enter_bootloader();         /* the Arduino way into the uploader */
+#endif
             }
         }
 #endif

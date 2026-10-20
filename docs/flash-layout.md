@@ -7,6 +7,9 @@ area byte for byte) and [`host/bootsel.py`](../host/bootsel.py) (boot pointer + 
 
 ## Map
 
+This is the factory map. With our bootloader the app area is split in two -- bootloader at
+0x1000, application at 0x9000, VM at 0x71000: see [bootloader.md](bootloader.md).
+
 | flash | content |
 |---|---|
 | `0x00000` | top area: flash header, file list (`uboot.boot`, `isd_config.ini`, `app_dir_head`, `key_mac`), uboot.boot, isd_config.ini |

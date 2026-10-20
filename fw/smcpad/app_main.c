@@ -45,6 +45,7 @@ const struct task_info task_info_table[] = {
     {"btstack",             3,     0,   768,   256  },
     {"systimer",		    7,	   0,   128,   0    },
     {"update",				1,	   0,   512,   0    },
+    {"smcpad_con",          1,     0,   1024,  0    },      /* bring-up console (app_idle.c) */
 #if CONFIG_APP_GAMEBOX
     {"gamebox",             3,     0,   1024,   128 },
 #endif

@@ -21,13 +21,13 @@
 /* #error " confirm, need disable !!!!!!" */
 #endif
 
-static void idle_timer_handle_test(void)
-{
-    log_info("wakeup");
-}
-
 extern void smcpad_bringup_start(void);
 extern void smcpad_trace(const char *tag);
+
+static void console_task(void *priv)
+{
+    smcpad_bringup_start();                 /* never returns */
+}
 
 static void idle_app_start()
 {
@@ -36,14 +36,13 @@ static void idle_app_start()
     log_info("=======================================");
     log_info("app_file: %s", __FILE__);
 
-    /* Bring-up: the console never returns and busy-waits, so it runs before anything that
-     * could hang (clk_set) and without relying on sys_timer. */
+    /* The bring-up console never returns, so it gets a task of its own ("smcpad_con" in
+     * task_info_table). Run here, in app_core, it kept this task from ever taking its event
+     * queue again: sys_event_task waits for each event it posts to be taken, and after its
+     * timeout it calls chip_reset() -- the pad rebooted every ~40 s unless the console was
+     * kept busy. No clk_set() here: the console and USB run on the clock the SDK set up. */
     smcpad_trace("idle: app started");
-    smcpad_bringup_start();
-
-    clk_set("sys", BT_NORMAL_HZ);
-
-    sys_timer_add(NULL, idle_timer_handle_test, 2000);
+    task_create(console_task, NULL, "smcpad_con");
 }
 
 static int idle_event_handler(struct application *app, struct sys_event *event)
