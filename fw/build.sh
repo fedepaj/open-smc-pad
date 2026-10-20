@@ -96,6 +96,10 @@ docker run --rm --platform linux/amd64 -e TEXT_BASE="$TEXT_BASE" \
             # or not) in flash, walked by smcpad_arduino_run()
             awk '\''/^        \*\(\.rodata\*\)$/ && !done { print "        . = ALIGN(4);"; print "        __init_array_start = .;"; print "        KEEP(*(SORT(.init_array.*)))"; print "        KEEP(*(.init_array))"; print "        KEEP(*(SORT(.ctors.*)))"; print "        KEEP(*(.ctors))"; print "        __init_array_end = .;"; done = 1 } { print }'\'' ../sdk.ld > /out/core/sdk.ld
             grep -q __init_array_start /out/core/sdk.ld
+            # + .bss.* (sketches build with -fdata-sections): the SDK script takes only .bss, so
+            # a sketch global would land in an orphan section past bss_end that crt0 never clears
+            sed -i "s/^        \\*(\\.bss)\$/        *(.bss)\\n        *(.bss.*)/" /out/core/sdk.ld
+            grep -q "^        \\*(\\.bss\\.\\*)\$" /out/core/sdk.ld
             $T/nm /out/core/smcpad_core.o | grep -E " U (setup|loop)$" | sed "s/^/  core needs: /" || true
             # the native (non-bitcode) members of the SDK archives: what a plain ld may still
             # need besides the core object (the bitcode is all inside it already)

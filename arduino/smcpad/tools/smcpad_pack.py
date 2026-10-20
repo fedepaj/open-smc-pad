@@ -16,6 +16,7 @@ from pathlib import Path
 ENTRY = 0x1E08120                   # app.bin at flash 0x9120 (APP_DIR 0x9000)
 AREA_MAX = 0x71000 - 0x9000
 OVERLAYS = ["aec", "wav", "ape", "flac", "m4a", "amr", "dts", "fm", "mp3", "wma"]
+KNOWN = {".text", ".mmu_tlb", ".boot_info", ".irq_stack", ".data", ".bss", ".data_code", ".vir_timer"}
 
 
 def crc16(data, crc=0):
@@ -36,17 +37,24 @@ def elf_sections(elf):
         return struct.unpack_from("<IIIIII", elf, shoff + i * shentsize)
 
     strtab = hdr(shstrndx)[4]
-    out = {}
+    out, alloc = {}, []
     for i in range(shnum):
         name_off, typ, flags, addr, off, size = hdr(i)
         name = elf[strtab + name_off: elf.index(b"\0", strtab + name_off)].decode()
         data = b"" if typ == 8 else elf[off:off + size]     # SHT_NOBITS
         out[name] = (addr, data)
-    return out
+        if flags & 2:                                       # SHF_ALLOC
+            alloc.append(name)
+    return out, alloc
 
 
 def app_bin(elf):
-    s = elf_sections(elf)
+    s, alloc = elf_sections(elf)
+    # anything else is an orphan the core's linker script did not place: in RAM past bss_end,
+    # never cleared or loaded (a sketch global left uninitialised)
+    orphans = [n for n in alloc if n not in KNOWN and not n.startswith(".overlay_")]
+    if orphans:
+        sys.exit("sections the core's linker script does not place: " + " ".join(orphans))
     parts = [s[".text"][1], s[".data"][1], s[".data_code"][1]]
     for o in OVERLAYS:
         data = s.get(".overlay_" + o, (0, b""))[1]
