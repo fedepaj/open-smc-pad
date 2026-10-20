@@ -33,6 +33,22 @@ Build model, verified on the pad (2026-10-20):
 Relinking the LTO output without the plugin reproduces `.text`/`.data`/`.data_code` of the
 normal build byte for byte, which is what makes this sound.
 
-Next: the Arduino API in C++ (`cores/`), C++ constructors via `.init_array` in the core's linker
-script, platform.txt/boards.txt, the macOS toolchain under blink (interpreter mode is byte-exact),
-libraries for the pads/LEDs/keys/encoders, MIDI (USB, BLE, DIN) and an ArduinoBLE-compatible BLE.
+## What a sketch gets (2026-10-20)
+
+- The Arduino API (ArduinoCore-API 1.5.2): `Serial` (USB CDC), digital I/O on pins 0-19
+  (`variants/smcpad/pins_arduino.h`), `millis`/`delay`, `String`, C++ with constructors and
+  `new`. The pads, keys, encoders and LEDs are serviced in the background from before `setup()`.
+- Libraries in `smcpad/libraries` (examples in each):
+  - **SMCPad** -- pads (velocity, pressure), 10 buttons, 8 knobs, button LEDs, RGB pad LEDs;
+    callbacks or polling.
+  - **MIDIUSB** -- Arduino's MIDIUSB API on the core's USB-MIDI interface.
+  - **ArduinoBLE** -- the ArduinoBLE API, peripheral role (services, characteristics typed and
+    string, descriptors, advertising, event handlers) on the runtime's GATT server
+    (`fw/smcpad/arduino/smcpad_ble.c`, see `docs/bluetooth.md`). The central role (scan,
+    connect) compiles but finds nothing.
+  - **BLEMIDI** -- BLE-MIDI on ArduinoBLE with the MIDIUSB API (`sendMIDI`/`read`), plus
+    `noteOn`/`noteOff`/`controlChange`; macOS Audio MIDI Setup connects to it.
+- Every sketch carries the BLE stack (it is in the core object): ~148 KB of the 416 KB area.
+
+Next: DIN MIDI on `Serial1` (UART1, PC5), optional USB HID, a real `realloc`, the test suite,
+Windows toolchain, Boards Manager packaging.

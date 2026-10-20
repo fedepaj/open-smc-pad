@@ -1,4 +1,28 @@
-# Bluetooth: BLE-MIDI
+# Bluetooth: BLE-MIDI and the BLE runtime
+
+## In the Arduino core (2026-10-20)
+
+- **Runtime** `fw/smcpad/arduino/smcpad_ble.c` (API in `smcpad_rt.h`, `smcpad_ble_*`): a GATT
+  server on the SDK stack. The caller gives the ATT database in BTstack's compiled format
+  (entries `size, flags, handle, type (2/16 bytes), value`, no version byte, zero size ends it);
+  dynamic attributes go to its read/write callbacks, which run in the BT stack's task. The
+  CCCs (0x2902) are kept by the runtime (found by scanning the database), and a 0x2A05 Service
+  Changed value, if present, is indicated on every connection (`ATT_OP_INDICATE`, range
+  0x0001-0xFFFF). Local ATT MTU 247. It provides the hooks the SDK's BLE start calls
+  (`bt_ble_init` & co., replacing `ble_hogp.c`); the console's BLE-MIDI now sits on it too.
+- **Address = chip MAC with the low 3 bytes XORed with an FNV-1a hash of the database**
+  (`adv_cfg_t.set_local_addr_tag = USE_SET_LOCAL_ADDRESS_TAG`). Why: macOS (CoreBluetooth)
+  keeps the GATT database it first found for an address, and our first database had no Service
+  Changed, so a new sketch's services were never seen (bleak listed only the old MIDI service,
+  even after reconnecting). One address per database fixes it on any OS; sketches serving the
+  same database (all BLEMIDI ones) keep their address and pairing.
+- **ArduinoBLE** library (peripheral): GAP (name, appearance), GATT (Service Changed), then the
+  sketch's services. Events are counted in the BT task and dispatched by `BLE.poll()`.
+  Tested from macOS with bleak (`PadService` example): read, write, descriptor, notify.
+- **BLEMIDI** library: on ArduinoBLE, MIDIUSB API. Tested with bleak (all pads, knobs as CC,
+  host notes lighting pads) and with Audio MIDI Setup + CoreMIDI.
+
+## The console firmware
 
 Status (2026-10-20): **works end to end with macOS.** Scan (bleak): "SMC-PAD" with the MIDI
 service UUID, RSSI -40. GATT: the MIDI characteristic with read / write-without-response /
