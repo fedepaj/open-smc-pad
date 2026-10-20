@@ -178,6 +178,12 @@ public:
 
     void setEventHandler(int event, BLECharacteristicEventHandler handler);
 
+    /* Not in ArduinoBLE: called for each write as it arrives, in the BT stack's task (keep it
+     * short, no BLE calls); for streams such as BLE-MIDI, where poll() would only see the last
+     * value. Such a characteristic keeps no value: reads are empty. */
+    typedef void (*RawWriteCallback)(const uint8_t *data, int length, void *arg);
+    void setRawWriteCallback(RawWriteCallback callback, void *arg = nullptr);
+
     operator bool() const { return _c != nullptr; }
 
 private:

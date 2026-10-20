@@ -2,12 +2,15 @@
 #pragma once
 #include <Arduino.h>
 
+#ifndef MIDI_EVENT_PACKET_T_DEFINED         /* shared with BLEMIDI */
+#define MIDI_EVENT_PACKET_T_DEFINED
 typedef struct {
     uint8_t header;         /* cable number << 4 | code index number (usually status >> 4) */
     uint8_t byte1;
     uint8_t byte2;
     uint8_t byte3;
 } midiEventPacket_t;
+#endif
 
 class MIDI_ {
 public:

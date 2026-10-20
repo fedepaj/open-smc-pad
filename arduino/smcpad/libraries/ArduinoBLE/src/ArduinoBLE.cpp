@@ -29,6 +29,8 @@ struct BLECharacteristicImpl {
     uint8_t seen_writes, seen_subs, seen_reads, seen_written;
     uint16_t last_ccc;
     BLECharacteristicEventHandler handlers[BLECharacteristicEventLast];
+    BLECharacteristic::RawWriteCallback raw_write;
+    void *raw_arg;
     BLEDescriptorImpl *descriptors;
     BLECharacteristicImpl *next;            /* in its service */
 };
@@ -260,6 +262,9 @@ static uint16_t on_read(uint16_t handle, uint16_t offset, uint8_t *buf, uint16_t
     if (buf && offset == 0) {
         c->reads++;
     }
+    if (c->raw_write) {
+        return 0;                           /* a stream (BLE-MIDI): reads are empty */
+    }
     return serve(c->value, c->len, offset, buf, size);
 }
 
@@ -267,7 +272,17 @@ static void on_write(uint16_t handle, uint16_t offset, const uint8_t *data, uint
 {
     BLECharacteristicImpl *c = find_characteristic(handle);
 
-    if (!c || offset >= c->size) {
+    if (!c) {
+        return;
+    }
+    if (c->raw_write) {
+        if (offset == 0) {
+            c->raw_write(data, len, c->raw_arg);
+        }
+        c->writes++;
+        return;
+    }
+    if (offset >= c->size) {
         return;
     }
     if (len > c->size - offset) {
@@ -840,6 +855,14 @@ void BLECharacteristic::setEventHandler(int event, BLECharacteristicEventHandler
 {
     if (_c && event >= 0 && event < BLECharacteristicEventLast) {
         _c->handlers[event] = handler;
+    }
+}
+
+void BLECharacteristic::setRawWriteCallback(RawWriteCallback callback, void *arg)
+{
+    if (_c) {
+        _c->raw_arg = arg;
+        _c->raw_write = callback;
     }
 }
 
