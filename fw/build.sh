@@ -100,6 +100,9 @@ docker run --rm --platform linux/amd64 -e TEXT_BASE="$TEXT_BASE" \
             # a sketch global would land in an orphan section past bss_end that crt0 never clears
             sed -i "s/^        \\*(\\.bss)\$/        *(.bss)\\n        *(.bss.*)/" /out/core/sdk.ld
             grep -q "^        \\*(\\.bss\\.\\*)\$" /out/core/sdk.ld
+            # - the ROM sprintf (no floating point): sketches get printf.c of the Arduino core instead
+            sed -i "/^  sprintf = ABSOLUTE(/d" /out/core/sdk.ld
+            ! grep -q "^  sprintf = ABSOLUTE(" /out/core/sdk.ld
             $T/nm /out/core/smcpad_core.o | grep -E " U (setup|loop)$" | sed "s/^/  core needs: /" || true
             # the native (non-bitcode) members of the SDK archives: what a plain ld may still
             # need besides the core object (the bitcode is all inside it already)

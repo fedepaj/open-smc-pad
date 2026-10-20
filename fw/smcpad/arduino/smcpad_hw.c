@@ -168,10 +168,14 @@ static void matrix_pass_done(u32 m)
     }
 }
 
+static volatile u32 hw_ticks;               /* TIMER3 periods (250 us) since smcpad_hw_begin() */
+static u8 hw_running;
+
 ___interrupt
 static void hw_tick_isr(void)
 {
     JL_TIMER3->CON |= BIT(14);              /* clear pending */
+    hw_ticks++;
 
     phases_off();
     for (volatile int i = 0; i < 20; i++) {
@@ -368,6 +372,40 @@ void smcpad_rgb_show(void)
     SPI1_CNT = LED_BYTES;                   /* DMA: returns at once */
 }
 
+/* ------------------------------------------------------------------ microseconds
+ * TIMER3 counts the 24 MHz oscillator up to PRD (one 250 us tick), so micros = ticks * 250 +
+ * CNT / 24. A wrap whose interrupt has not run yet (interrupts masked, or a higher priority
+ * one running) shows as the pending bit with a small CNT. Before the timer runs: jiffies. */
+#define TICK_US     250u
+#define TICK_CNT    (24000000u / 4000u)
+
+uint32_t smcpad_micros(void)
+{
+    extern unsigned long jiffies_half_msec(void);
+    u32 t, c, pend;
+
+    if (!hw_running) {
+        return jiffies_half_msec() * 500u;
+    }
+    do {
+        t = hw_ticks;
+        c = JL_TIMER3->CNT;
+        pend = JL_TIMER3->CON & BIT(15);
+    } while (t != hw_ticks);
+    if (pend && c < TICK_CNT / 2) {
+        t++;
+    }
+    return t * TICK_US + c / 24u;
+}
+
+void smcpad_delay_us(uint32_t us)
+{
+    uint32_t start = smcpad_micros();
+
+    while (smcpad_micros() - start < us) {
+    }
+}
+
 /* ------------------------------------------------------------------ start */
 
 void smcpad_hw_begin(void)
@@ -418,8 +456,9 @@ void smcpad_hw_begin(void)
     request_irq(IRQ_TIME3_IDX, 2, hw_tick_isr, 0);
     JL_TIMER3->CON = BIT(14);
     JL_TIMER3->CNT = 0;
-    JL_TIMER3->PRD = 24000000 / 4000;
+    JL_TIMER3->PRD = TICK_CNT;
     JL_TIMER3->CON = BIT(0) | BIT(3) | BIT(14);
+    hw_running = 1;
 
     /* the pads: take the ADC over from the SDK's scan (occupy mode stops it), then chain */
     adc_enter_occupy_mode(AD_CH_PA4);

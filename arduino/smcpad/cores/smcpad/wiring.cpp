@@ -58,3 +58,31 @@ void init(void) {}
 void initVariant(void) {}
 
 }
+
+/* WMath: random numbers (xorshift32; randomSeed(0) is ignored, as on AVR) */
+static uint32_t random_state = 2463534242u;
+
+void randomSeed(unsigned long seed)
+{
+    if (seed != 0) {
+        random_state = seed;
+    }
+}
+
+static uint32_t random_next(void)
+{
+    random_state ^= random_state << 13;
+    random_state ^= random_state >> 17;
+    random_state ^= random_state << 5;
+    return random_state;
+}
+
+long random(long howbig)
+{
+    return howbig <= 0 ? 0 : (long)(random_next() % (uint32_t)howbig);
+}
+
+long random(long howsmall, long howbig)
+{
+    return howsmall >= howbig ? howsmall : howsmall + random(howbig - howsmall);
+}

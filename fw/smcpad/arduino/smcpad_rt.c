@@ -62,10 +62,7 @@ uint32_t smcpad_millis(void)
     return jiffies_half_msec() >> 1;
 }
 
-uint32_t smcpad_micros(void)
-{
-    return jiffies_half_msec() * 500u;      /* 0.5 ms resolution until a µs timer is wired */
-}
+/* smcpad_micros(), smcpad_delay_us(): smcpad_hw.c (TIMER3) */
 
 void smcpad_yield(void)
 {
@@ -93,12 +90,6 @@ void smcpad_delay(uint32_t ms)
     }
 }
 
-void smcpad_delay_us(uint32_t us)
-{
-    /* busy loop, calibrated for the 24 MHz system clock (coarse) */
-    for (volatile uint32_t i = 0; i < us * 4; i++) {
-    }
-}
 
 /* ------------------------------------------------------------------ GPIO */
 
