@@ -42,6 +42,41 @@ void smcpad_gpio_mode(uint32_t gpio, uint32_t mode);
 void smcpad_gpio_write(uint32_t gpio, uint32_t value);
 int smcpad_gpio_read(uint32_t gpio);
 
+/* ------------------------------------------------------------------ the SMC-PAD hardware
+ * (smcpad_hw.c; started before setup()). Numbering:
+ *   pads     0..15, 0 = bottom-left, row by row upwards (MPC style: note 36 + pad)
+ *   buttons  0..9 in panel order: bluetooth, pad bank, knob bank, left, right, play, pause,
+ *            rec, shift, note repeat; their LEDs the same
+ *   encoders 0..7 = knobs 1..8 */
+#define SMCPAD_NUM_PADS     16
+#define SMCPAD_NUM_BUTTONS  10
+#define SMCPAD_NUM_ENCODERS 8
+
+enum {
+    SMCPAD_EV_PAD_ON = 1,           /* value: velocity 1..127 */
+    SMCPAD_EV_PAD_OFF,
+    SMCPAD_EV_BUTTON_DOWN,
+    SMCPAD_EV_BUTTON_UP,
+    SMCPAD_EV_ENCODER,              /* value: +1 / -1 */
+};
+
+typedef struct {
+    uint8_t type;
+    uint8_t index;
+    int16_t value;
+} smcpad_event_t;
+
+void smcpad_hw_begin(void);
+int smcpad_event_get(smcpad_event_t *ev);       /* 1 when one was waiting */
+uint16_t smcpad_pad_raw(int pad);               /* 0..1023, 0 at rest */
+uint32_t smcpad_pad_rounds(void);               /* ADC passes over all 16 pads so far */
+int smcpad_button(int button);                  /* 1 = held */
+int32_t smcpad_encoder(int encoder);            /* steps, signed, since start */
+uint32_t smcpad_matrix_raw(void);               /* bit (column * 2 + sense) */
+void smcpad_led_set(int led, int on);           /* button LEDs */
+void smcpad_rgb_set(int pad, uint32_t rgb);     /* 0xRRGGBB; shown by smcpad_rgb_show() */
+void smcpad_rgb_show(void);
+
 /* system */
 void smcpad_enter_bootloader(void);         /* DFU mode of fw/boot; does not return */
 void smcpad_reset(void);                    /* does not return */

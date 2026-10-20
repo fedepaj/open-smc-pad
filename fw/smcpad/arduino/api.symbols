@@ -12,6 +12,16 @@ smcpad_serial_flush
 smcpad_gpio_mode
 smcpad_gpio_write
 smcpad_gpio_read
+smcpad_hw_begin
+smcpad_event_get
+smcpad_pad_raw
+smcpad_pad_rounds
+smcpad_button
+smcpad_encoder
+smcpad_matrix_raw
+smcpad_led_set
+smcpad_rgb_set
+smcpad_rgb_show
 smcpad_enter_bootloader
 smcpad_reset
 smcpad_boot_ok

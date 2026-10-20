@@ -17,6 +17,7 @@ extern ctor_t __init_array_end[] __attribute__((weak));
 
 void smcpad_arduino_run(void)
 {
+    smcpad_hw_begin();                      /* pads, keys, encoders, LEDs */
     for (ctor_t *c = __init_array_start; c && c < __init_array_end; c++) {
         (*c)();
     }
