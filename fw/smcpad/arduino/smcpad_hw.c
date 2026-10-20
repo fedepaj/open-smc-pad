@@ -302,6 +302,22 @@ static void pad_sample(u32 pad, u32 v)
     }
 }
 
+/* Power: every 64 pad rounds (~5 times a second) two more conversions on the PMU mux, as
+ * the SDK's adc_sample() does them: the bandgap reference (to convert to mV) and VBAT / 4.
+ * (AD_CH_LDO5V reads 0 on this board: 5 V does not reach the chip's LDO5V; the battery is
+ * charged by a separate charger. smcpad_usb_power() is in smcpad_rt.c.) */
+static const u32 pmu_ch[2] = { AD_CH_LDOREF, AD_CH_VBAT };
+static volatile u16 pmu_raw[2];
+static u8 pmu_pos;                          /* 0: pads; n: pmu_ch[n - 1] converting */
+
+static void adc_start_pmu(u32 ch)
+{
+    adc_pmu_detect_en(ch >> 20);
+    JL_ADC->CON = 0b110 | (0xFu << 12) | (AD_CH_MUX << 8) | BIT(3) | BIT(5) | BIT(6);
+    JL_ADC->CON |= BIT(4);
+    JL_ADC->CON |= BIT(6);
+}
+
 ___interrupt
 static void hw_adc_isr(void)
 {
@@ -310,15 +326,42 @@ static void hw_adc_isr(void)
 
     JL_ADC->CON = BIT(6);                   /* clear pending, stop */
     JL_ADC->CON = 0;
+    if (pmu_pos) {
+        pmu_raw[pmu_pos - 1] = (u16)v;
+        if (pmu_pos < ARRAY_SIZE(pmu_ch)) {
+            adc_start_pmu(pmu_ch[pmu_pos++]);
+            return;
+        }
+        pmu_pos = 0;
+        adc_pmu_detect_en(AD_CH_WVDD >> 20);
+        adc_start(0);                       /* the mux is on pad position 0 already */
+        return;
+    }
     pad_sample(adc_to_pad[pos], v);
     pos = (pos + 1) % SMCPAD_NUM_PADS;
-    if (pos == 0) {
-        adc_rounds++;
-    }
     adc_pos = (u8)pos;
     mux_select(pos & 7);
+    if (pos == 0 && (++adc_rounds & 63) == 0) {
+        pmu_pos = 1;
+        adc_start_pmu(pmu_ch[0]);
+        return;
+    }
     adc_start(pos);
 }
+
+static uint32_t pmu_mv(int i)
+{
+    u32 ref = pmu_raw[0], val = pmu_raw[i];
+
+    return ref ? adc_value_to_voltage(ref, val) * 4 : 0;
+}
+
+uint32_t smcpad_battery_mv(void)
+{
+    return pmu_mv(1);
+}
+
+
 
 uint16_t smcpad_pad_raw(int pad)
 {

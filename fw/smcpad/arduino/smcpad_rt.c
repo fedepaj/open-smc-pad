@@ -161,6 +161,13 @@ void smcpad_usbmidi_flush(void)
     tud_task();
 }
 
+/* USB 5 V cannot be sensed (it does not reach the chip's LDO5V): a host that enumerated us is
+ * the sign the pad is on USB power, i.e. charging. A charger without data does not count. */
+int smcpad_usb_power(void)
+{
+    return tud_mounted();
+}
+
 int smcpad_serial_connected(void)
 {
     return tud_cdc_connected();

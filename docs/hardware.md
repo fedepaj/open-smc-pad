@@ -179,3 +179,12 @@ half of them.
 
 The QFN32 pinout of the AC6966C is not in the reference docs here; trace from the package or
 use the 595/4051 side as the known end.
+
+## Power (2026-10-20)
+
+- **Battery**: VBAT / 4 on the ADC's PMU mux (`AD_CH_VBAT`), converted with the bandgap
+  reading (`AD_CH_LDOREF`, `adc_value_to_voltage`); sampled by our pad ADC chain every 64
+  rounds (`smcpad_battery_mv()`). 4.1 V measured on USB.
+- **USB 5 V is not visible to the chip**: `AD_CH_LDO5V` reads 0 and the SDK charge module is off
+  (`TCFG_CHARGE_ENABLE` disabled): a separate charger does the battery (red / green LED in
+  hardware). `smcpad_usb_power()` = a USB host enumerated us.

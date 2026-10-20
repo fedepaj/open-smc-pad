@@ -268,6 +268,10 @@ static void testHardware()
   for (int b = 0; b < SMCPAD_NUM_BUTTONS; b++) held |= SMCPad.button(b);
   check("buttons at rest", !held);
 
+  uint32_t bat = smcpad_battery_mv();
+  check("battery voltage", bat >= 3000 && bat <= 4400, String(bat) + " mV");
+  check("USB power detected", smcpad_usb_power() == 1);
+
   uint8_t packet[4] = {0x0B, 0xB0, 119, 0};   // CC 119 = 0 on channel 1: harmless
   check("USB-MIDI send", smcpad_usbmidi_write(packet) == 1);
 }

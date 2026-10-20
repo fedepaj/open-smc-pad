@@ -27,6 +27,8 @@ smcpad_matrix_raw
 smcpad_led_set
 smcpad_rgb_set
 smcpad_rgb_show
+smcpad_battery_mv
+smcpad_usb_power
 smcpad_ble_begin
 smcpad_ble_ready
 smcpad_ble_set_name

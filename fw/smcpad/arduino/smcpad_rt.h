@@ -122,6 +122,10 @@ int smcpad_ble_notify(uint16_t handle, const uint8_t *data, uint16_t len);   /* 
 int smcpad_ble_subscribed(uint16_t handle);         /* the value's CCC */
 void smcpad_ble_disconnect(void);
 
+/* power (updated ~5 times a second; 0 until the first reading) */
+uint32_t smcpad_battery_mv(void);           /* the battery (VBAT), mV */
+int smcpad_usb_power(void);                 /* 1 when a USB host enumerated us (so: charging) */
+
 /* system */
 void smcpad_enter_bootloader(void);         /* DFU mode of fw/boot; does not return */
 void smcpad_reset(void);                    /* does not return */
