@@ -1996,6 +1996,18 @@ static void run_command(const char *line)
     case 'B':
         cmd_enter_bootloader();
         break;
+    case 'S': {
+        extern int smcpad_flash_read_sr(u8 *sr1, u8 *sr2);
+        u8 sr1 = 0, sr2 = 0;
+
+        if (smcpad_flash_read_sr(&sr1, &sr2)) {
+            smcpad_dbg_puts("status register read failed\r\n");
+        } else {
+            smcpad_dbg_hex16("flash SR1 (BP = 0x7C)", sr1);
+            smcpad_dbg_hex16("flash SR2 (CMP = 0x40, QE = 0x02)", sr2);
+        }
+        break;
+    }
     case 'A':
         smcpad_cmd_pads_live();
         break;

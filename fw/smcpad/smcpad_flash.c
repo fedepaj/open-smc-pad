@@ -360,6 +360,29 @@ static RAMFN int flash_op_ram(u32 port, u32 cmd, u32 addr, const u8 *data, u32 l
     return err;
 }
 
+/* Status registers 1 and 2 (RDSR 0x05 / 0x35), for the console's `S`: whether the SDK has
+ * block-protected the flash (BP bits SR1 0x7C, CMP SR2 0x40). */
+RAMFN int smcpad_flash_read_sr(u8 *sr1, u8 *sr2)
+{
+    u32 port = (FLASH_PORT_SEL >> 5) & 1;
+    int err;
+
+    local_irq_disable();
+    err = suspend_sfc(port);
+    if (!err) {
+        err = read_status(port, sr1);
+        if (!err) {
+            cs_level(port, 0);
+            err = spi_xfer(0x35, 0, 0);
+            if (!err) err = spi_xfer(0xFF, 1, sr2);
+            cs_level(port, 1);
+        }
+        sfc_resume(1);
+    }
+    local_irq_enable();
+    return err;
+}
+
 /* Drop the cache lines of a flash range, the way flushinv_dcache_api does: SFC suspended,
  * interrupts off, from RAM. For readers of flash we have just written. */
 RAMFN int smcpad_flash_drop_cache(u32 addr, u32 len)

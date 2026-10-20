@@ -77,9 +77,17 @@ bootloader stays in DFU mode when:
 In DFU mode the SHIFT button's LED blinks. The reason is in the diagnostics (`boot.magic`
 low digit: 1 asked, 2 no app, 3 keys, 4 crash loop, 5 bad CRC).
 
-Still open: block-protecting 0x0..0x8000 in the flash status register (what the SDK's
-`update_norflash_write_protect` does to it at boot needs checking first), and power cuts at
-random points of a DFU transfer and of a bootloader update (needs hands on the switch).
+Still open:
+- block-protecting 0x0..0x8000 in the flash status register. Measured (console `S`): with our
+  SDK application running SR1 = SR2 = 0, i.e. nothing is protected (the SDK's "protection below
+  vm_saddr" is a software check, not the BP bits). Setting BP from the bootloader needs the BP
+  semantics of this flash (JEDEC id 0xCD7013, not a common vendor) confirmed first, and every
+  writer of sector 0 / 0x1000 (installer, alt 2) to unprotect around its write -- the
+  installer already does.
+- power cuts at random points of a DFU transfer and of a bootloader update (hands on the
+  switch).
+- the install from the stock firmware after the jlfs.c refactor (same installer logic; needs
+  a power cycle by hand to re-run).
 
 ## Boot decision (fw/boot/boot.c, runs in place from flash)
 
