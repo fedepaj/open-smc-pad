@@ -41,6 +41,16 @@ void smcpad_usbmidi_flush(void);
 int smcpad_store_read(int key, void *buf, int len);
 int smcpad_store_write(int key, const void *buf, int len);
 
+/* raw flash, for bulk data (patterns): only flash 0x77000-0x7E000 (28 KB, seven 4 KB
+ * sectors); anything else is refused (-1). Erased flash reads 0xFF; a write can only clear
+ * bits, so erase the sector first. Return 0 / the length, -1 on error. */
+#define SMCPAD_FLASH_BEGIN  0x77000u
+#define SMCPAD_FLASH_END    0x7E000u
+#define SMCPAD_FLASH_SECTOR 0x1000u
+int smcpad_flash_erase(uint32_t addr);      /* the 4 KB sector at addr (aligned) */
+int smcpad_flash_write(uint32_t addr, const void *data, uint32_t len);
+int smcpad_flash_read(uint32_t addr, void *data, uint32_t len);
+
 /* GPIO, by JieLi number: port * 16 + bit (PA0 = 0, PB0 = 16, PC0 = 32) */
 enum {
     SMCPAD_GPIO_INPUT = 0,

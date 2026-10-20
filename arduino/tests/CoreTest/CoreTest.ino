@@ -238,6 +238,22 @@ static void testStorage()
   int n = smcpad_store_read(39, in, sizeof(in));
   check("store read back", n == (int)sizeof(out) && memcmp(in, out, sizeof(out)) == 0, String(n));
 
+  // raw flash: the last USRFLASH sector
+  const uint32_t sector = SMCPAD_FLASH_END - SMCPAD_FLASH_SECTOR;
+  check("flash erase", smcpad_flash_erase(sector) == 0);
+  uint8_t fl[300];
+  smcpad_flash_read(sector + 100, fl, sizeof(fl));
+  bool erased = true;
+  for (unsigned i = 0; i < sizeof(fl); i++) erased &= fl[i] == 0xFF;
+  check("flash erased reads FF", erased);
+  for (unsigned i = 0; i < sizeof(fl); i++) fl[i] = i * 13 + 7;
+  check("flash write (crosses a page)", smcpad_flash_write(sector + 200, fl, sizeof(fl)) == (int)sizeof(fl));
+  uint8_t back[300];
+  smcpad_flash_read(sector + 200, back, sizeof(back));
+  check("flash read back", memcmp(fl, back, sizeof(fl)) == 0);
+  check("flash refuses the VM", smcpad_flash_erase(0x71000) == -1 && smcpad_flash_write(0x75000, fl, 4) == -1);
+  check("flash refuses past the end", smcpad_flash_write(SMCPAD_FLASH_END - 2, fl, 4) == -1);
+
   uint32_t before;
   EEPROM.get(4000, before);
   uint32_t value = before + 1;

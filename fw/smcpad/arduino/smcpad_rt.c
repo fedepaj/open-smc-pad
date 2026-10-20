@@ -117,6 +117,67 @@ int smcpad_store_write(int key, const void *buf, int len)
     return syscfg_write(CFG_USER_DEFINE_BEGIN + key, (void *)buf, len);
 }
 
+/* ------------------------------------------------------------------ raw flash: USRFLASH only
+ * Flash 0x77000-0x7E000 (docs/sequencer-design.md): above the VM, stored plain; the stock
+ * firmware kept its presets there. BTIF (0x75000), USRTRIM (0x7E000), key_mac (0x7F000), the
+ * VM and everything below (application, bootloader) are refused.
+ * Erase / program go through our own driver (fw/smcpad/smcpad_flash.c: RAM code, interrupts
+ * off, every wait bounded, retried): the SDK's norflash_write / norflash_read never return
+ * here. Reads are plain reads of the mapped flash (CPU 0x1E00000 = flash 0x1000), which the
+ * driver keeps coherent (it drops the SFC cache after each operation). */
+#define USRFLASH_BEGIN  0x77000u
+#define USRFLASH_END    0x7E000u
+#define FLASH_ATTEMPTS  3
+
+extern int smcpad_flash_erase_sector(u32 addr, int attempts);
+extern int smcpad_flash_program(u32 addr, const u8 *data, u32 len, int attempts);
+
+static int usrflash_range(uint32_t addr, uint32_t len)
+{
+    return addr >= USRFLASH_BEGIN && addr < USRFLASH_END && len <= USRFLASH_END - addr;
+}
+
+int smcpad_flash_erase(uint32_t addr)
+{
+    if ((addr & 0xFFF) || !usrflash_range(addr, 0x1000)) {
+        return -1;
+    }
+    return smcpad_flash_erase_sector(addr, FLASH_ATTEMPTS) > 0 ? 0 : -1;
+}
+
+int smcpad_flash_write(uint32_t addr, const void *data, uint32_t len)
+{
+    static u8 page[256];                    /* the driver wants the data in RAM */
+    const u8 *d = data;
+    uint32_t done = 0;
+
+    if (!usrflash_range(addr, len)) {
+        return -1;
+    }
+    while (done < len) {
+        uint32_t a = addr + done, n = 256 - (a & 255);
+
+        if (n > len - done) {
+            n = len - done;
+        }
+        memcpy(page, d + done, n);
+        if (smcpad_flash_program(a, page, n, FLASH_ATTEMPTS) <= 0) {
+            return -1;
+        }
+        done += n;
+    }
+    return (int)len;
+}
+
+int smcpad_flash_read(uint32_t addr, void *data, uint32_t len)
+{
+    if (!usrflash_range(addr, len)) {
+        return -1;
+    }
+    memcpy(data, (const void *)(0x1E00000u + addr - 0x1000u), len);
+    return (int)len;
+}
+
 /* ------------------------------------------------------------------ GPIO */
 
 void smcpad_gpio_mode(uint32_t gpio, uint32_t mode)

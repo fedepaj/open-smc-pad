@@ -14,6 +14,9 @@ smcpad_usbmidi_read
 smcpad_usbmidi_flush
 smcpad_store_read
 smcpad_store_write
+smcpad_flash_erase
+smcpad_flash_write
+smcpad_flash_read
 smcpad_gpio_mode
 smcpad_gpio_write
 smcpad_gpio_read
