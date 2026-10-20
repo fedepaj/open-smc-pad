@@ -4,6 +4,7 @@
 #include <SMCPad.h>
 #include <MIDIUSB.h>
 #include <ArduinoBLE.h>
+#include <EEPROM.h>
 
 static int passed, failed;
 extern "C" size_t smcpad_malloc_usable_size(void *p);
@@ -63,10 +64,23 @@ static void testTime()
   unsigned long du = micros() - u0;
   check("micros over 20 ms", du >= 19000 && du <= 22000, String(du) + " us");
 
-  u0 = micros();
-  for (int i = 0; i < 10; i++) delayMicroseconds(1000);
-  du = micros() - u0;
-  check("delayMicroseconds 10x1000", du >= 9000 && du <= 12000, String(du) + " us");
+  // the best of several runs: the delay itself, without other tasks' time
+  unsigned long best = ~0ul;
+  for (int i = 0; i < 20; i++) {
+    u0 = micros();
+    delayMicroseconds(500);
+    du = micros() - u0;
+    if (du < best) best = du;
+  }
+  check("delayMicroseconds(500)", best >= 500 && best <= 560, String(best) + " us");
+  best = ~0ul;
+  for (int i = 0; i < 20; i++) {
+    u0 = micros();
+    delayMicroseconds(20);
+    du = micros() - u0;
+    if (du < best) best = du;
+  }
+  check("delayMicroseconds(20)", best >= 20 && best <= 30, String(best) + " us");
 }
 
 // ---------------------------------------------------------------- numbers and text
@@ -213,6 +227,31 @@ static void testHeap()
   check("heap churn", true);
 }
 
+// ---------------------------------------------------------------- storage
+
+static void testStorage()
+{
+  uint8_t out[100], in[100];
+  for (int i = 0; i < 100; i++) out[i] = (uint8_t)(i * 7 + millis());
+  check("store write", smcpad_store_write(39, out, sizeof(out)) > 0);
+  memset(in, 0, sizeof(in));
+  int n = smcpad_store_read(39, in, sizeof(in));
+  check("store read back", n == (int)sizeof(out) && memcmp(in, out, sizeof(out)) == 0, String(n));
+
+  uint32_t before;
+  EEPROM.get(4000, before);
+  uint32_t value = before + 1;
+  EEPROM.put(4000, value);
+  check("EEPROM commit", EEPROM.commit());
+  uint32_t again;
+  check("EEPROM get", EEPROM.get(4000, again) == value);
+  uint32_t stored = 0;
+  uint8_t chunk[512];
+  smcpad_store_read(40 + 4000 / 512, chunk, sizeof(chunk));
+  memcpy(&stored, chunk + 4000 % 512, 4);
+  check("EEPROM in flash", stored == value, String(stored) + " (runs so far)");
+}
+
 // ---------------------------------------------------------------- hardware service and USB
 
 static void testHardware()
@@ -261,6 +300,7 @@ void setup()
   testNumbers();
   testString();
   testHeap();
+  testStorage();
   testHardware();
   testBLE();
   Serial.print("DONE pass=");

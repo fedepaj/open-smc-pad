@@ -35,6 +35,12 @@ int smcpad_usbmidi_write(const uint8_t packet[4]);     /* 1 when queued */
 int smcpad_usbmidi_read(uint8_t packet[4]);            /* 1 when one was waiting */
 void smcpad_usbmidi_flush(void);
 
+/* persistent storage: 49 keys (0..48), each a blob of up to a few KB, in the SDK's VM (16 KB
+ * of flash in all, kept across firmware updates). Return the length read / written, <= 0 on
+ * error or when the key was never written. Writing erases flash: not in a tight loop. */
+int smcpad_store_read(int key, void *buf, int len);
+int smcpad_store_write(int key, const void *buf, int len);
+
 /* GPIO, by JieLi number: port * 16 + bit (PA0 = 0, PB0 = 16, PC0 = 32) */
 enum {
     SMCPAD_GPIO_INPUT = 0,

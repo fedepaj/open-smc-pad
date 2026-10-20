@@ -57,10 +57,7 @@ void smcpad_on_touch_1200(void)
 
 /* ------------------------------------------------------------------ time */
 
-uint32_t smcpad_millis(void)
-{
-    return jiffies_half_msec() >> 1;
-}
+/* smcpad_millis(): smcpad_hw.c (TIMER3) */
 
 /* smcpad_micros(), smcpad_delay_us(): smcpad_hw.c (TIMER3) */
 
@@ -81,15 +78,44 @@ void smcpad_yield(void)
     clr_wdt();
 }
 
+/* At least ms milliseconds, counted on micros (as AVR does): millis steps would end it up to
+ * a millisecond early. */
 void smcpad_delay(uint32_t ms)
 {
-    uint32_t start = smcpad_millis();
+    uint32_t start = smcpad_micros();
 
-    while (smcpad_millis() - start < ms) {
+    while (ms > 0) {
         smcpad_yield();
+        while (ms > 0 && smcpad_micros() - start >= 1000) {
+            ms--;
+            start += 1000;
+        }
     }
 }
 
+
+/* ------------------------------------------------------------------ storage
+ * The SDK's VM (flash 0x71000, 16 KB, outside the application area: kept across DFU updates),
+ * user items 1-49 (syscfg_id.h). Not from interrupts. */
+#include "system/syscfg_id.h"
+
+#define STORE_KEYS  (CFG_USER_DEFINE_END - CFG_USER_DEFINE_BEGIN + 1)
+
+int smcpad_store_read(int key, void *buf, int len)
+{
+    if (key < 0 || key >= STORE_KEYS || len <= 0 || len > 0xFFFF) {
+        return -1;
+    }
+    return syscfg_read(CFG_USER_DEFINE_BEGIN + key, buf, len);
+}
+
+int smcpad_store_write(int key, const void *buf, int len)
+{
+    if (key < 0 || key >= STORE_KEYS || len <= 0 || len > 0xFFFF) {
+        return -1;
+    }
+    return syscfg_write(CFG_USER_DEFINE_BEGIN + key, (void *)buf, len);
+}
 
 /* ------------------------------------------------------------------ GPIO */
 

@@ -168,14 +168,16 @@ static void matrix_pass_done(u32 m)
     }
 }
 
-static volatile u32 hw_ticks;               /* TIMER3 periods (250 us) since smcpad_hw_begin() */
+static volatile u32 hw_ticks, hw_ticks_hi;  /* TIMER3 periods (250 us) since smcpad_hw_begin() */
 static u8 hw_running;
 
 ___interrupt
 static void hw_tick_isr(void)
 {
     JL_TIMER3->CON |= BIT(14);              /* clear pending */
-    hw_ticks++;
+    if (++hw_ticks == 0) {
+        hw_ticks_hi++;
+    }
 
     phases_off();
     for (volatile int i = 0; i < 20; i++) {
@@ -379,6 +381,22 @@ void smcpad_rgb_show(void)
 #define TICK_US     250u
 #define TICK_CNT    (24000000u / 4000u)
 
+/* millis: ticks / 4 over the 64-bit count (wraps after 49.7 days, as on Arduino) */
+uint32_t smcpad_millis(void)
+{
+    extern unsigned long jiffies_half_msec(void);
+    u32 lo, hi;
+
+    if (!hw_running) {
+        return jiffies_half_msec() >> 1;
+    }
+    do {
+        hi = hw_ticks_hi;
+        lo = hw_ticks;
+    } while (hi != hw_ticks_hi);
+    return lo >> 2 | hi << 30;
+}
+
 uint32_t smcpad_micros(void)
 {
     extern unsigned long jiffies_half_msec(void);
@@ -398,10 +416,28 @@ uint32_t smcpad_micros(void)
     return t * TICK_US + c / 24u;
 }
 
+/* Short waits (bit-banging) run with interrupts off, so they are exact; longer ones can be
+ * stretched by interrupts and higher-priority tasks, as on any RTOS-based core. */
 void smcpad_delay_us(uint32_t us)
 {
-    uint32_t start = smcpad_micros();
+    uint32_t start;
 
+    if (us <= 50 && hw_running) {
+        /* count the timer directly: 24 counts per us, wrapping at TICK_CNT */
+        u32 last, elapsed = 0, target = us * 24;
+
+        local_irq_disable();
+        last = JL_TIMER3->CNT;
+        while (elapsed < target) {
+            u32 c = JL_TIMER3->CNT;
+
+            elapsed += c >= last ? c - last : c + TICK_CNT - last;
+            last = c;
+        }
+        local_irq_enable();
+        return;
+    }
+    start = smcpad_micros();
     while (smcpad_micros() - start < us) {
     }
 }
