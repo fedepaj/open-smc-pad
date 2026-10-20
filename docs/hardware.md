@@ -19,10 +19,10 @@ Confidence: **fw** = read directly from register/pin constants in the firmware;
 | PC1 | key-matrix sense row 1 (input, pull-up) | read as `PORTC.IN & 2` in `1e22fb6`; pin table entry 7 | fw |
 | PA5, PA2, PA0, PA1 | button-LED **segments** (sinks, active low) | pin table `0x1E1649F` = `05 02 00 01`, matching `PORTA.OUT \|= 0x27` in `1e23186` | fw |
 | PA3, PC2, PC3 | button-LED **phases** (high-side commons, active low, one at a time) | `1e23186`: phase 0 cleared on `PORTA`, phases 1/2 on `PORTA + 0x80` = **PORTC** | fw |
-| PB2, PB3, PC4 | HCF4051 select S0/S1/S2 (shared by both muxes) | set as outputs in ADC init `1e0f31a`; ISR `1e22d50` writes `idx & 7` | infer (order) |
+| PB2, PB3, PC4 | HCF4051 select S0/S1/S2 (shared by both muxes) | set as outputs in ADC init `1e0f31a`; ISR `1e22d50` writes `idx & 7` | measured |
 | PA4 | 4051 #1 COM → ADC ch3 (pads 0–7) | ADC `CH_SEL = 3 + (idx >= 8)` in `1e22d50`; PA4 set analog in init | fw |
 | PA6 | 4051 #2 COM → ADC ch4 (pads 8–15) | same | fw |
-| PB1 | pad RGB LED data (addressable, SPI1 DO map A, DMA) | `1e11cba` PB1 output + SPI1 (`0x1E1D00`) DMA after 16× `set(i,1,1,1)` | infer |
+| PB1 | pad RGB LED data (WS2812-style, SPI1 DO map A, DMA) | `1e11cba`/`1e10500`; driven by our console (`n`, `W`) | measured |
 | PC5 | MIDI OUT TX (UART1 via output-channel mux) | `1e11dfa` PC5 mux config right before UART1 (`0x1E2100`) setup | infer |
 | USBDP/USBDM | USB device (MIDI) | — | board |
 | PD0–PD4 | internal SPI flash | standard JieLi | — |
@@ -122,12 +122,38 @@ half of them.
 - A second ISR (`1e23076`) decodes the 8 encoders from pairs of matrix bits (8 structs × 20 bytes,
   bit-pair table near `0x1E16490+572`).
 
-## Pads (ADC ISR `1e22d50`)
+## Pads (ADC ISR `1e22d50`) — mapped 2026-10-20
 
-- 16 conversions per round: select `idx & 7` on PB2/PB3/PC4, channel PA4 for idx 0–7, PA6 for 8–15.
-- Init stores 16 thresholds of 150 (`1e0f31a`). Calibration table lives in flash `USRTRIM`
-  (`0x7E000`, 16-bit values ~`0x00DC…0x03B6`).
-- Two extra conversions after the pads (internal channel / battery — not yet identified).
+- Two HCF4051s share the select lines **S0 = PB2, S1 = PB3, S2 = PC4** (bit order confirmed: the
+  stock table below turns our positions into a perfectly regular grid). COM of mux #1 → **PA4**
+  (ADC channel 3), mux #2 → **PA6** (channel 4). PB5 low (as the stock init leaves it).
+- ADC **position** = mux index for PA4 (0–7), 8 + mux index for PA6 (8–15).
+- FSR to ground-referenced divider: **0 at rest** (silicone pads resting on top included), up to
+  ~950–990 of 1023 pressed hard on the assembled pad.
+- Stock firmware: 16 conversions per round from the ADC-done interrupt (next mux + start in the
+  ISR), 16 thresholds of 150 (`1e0f31a`); per-pad calibration in flash `USRTRIM` (`0x7E000`,
+  16-bit values ~`0x00DC…0x03B6`); two extra conversions after the pads (not identified).
+- Stock tables (flash `0x17CF0`, `0x17D00` of the dump): **ADC position → stock pad**
+  `2 0 1 3 15 14 12 13 6 4 5 7 8 9 11 10`, **stock pad → RGB chain index**
+  `11 4 2 7 10 14 6 9 0 5 15 1 13 12 8 3`. Stock pad numbering: 0 = bottom-left, row by row
+  upwards (MPC style).
+- Measured with the console's `W` (pad 1 = top-left as you look at the pad):
+
+  | | col 1 | col 2 | col 3 | col 4 |
+  |---|---|---|---|---|
+  | top row: pad / ADC pos / stock / LED | 1 / 6 / 12 / 13 | 2 / 7 / 13 / 12 | 3 / 5 / 14 / 8 | 4 / 4 / 15 / 3 |
+  | row 2 | 5 / 12 / 8 / 0 | 6 / 13 / 9 / 5 | 7 / 15 / 10 / 15 | 8 / 14 / 11 / 1 |
+  | row 3 | 9 / 9 / 4 / 10 | 10 / 10 / 5 / 14 | 11 / 8 / 6 / 6 | 12 / 11 / 7 / 9 |
+  | bottom row | 13 / 1 / 0 / 11 | 14 / 2 / 1 / 4 | 15 / 0 / 2 / 2 | 16 / 3 / 3 / 7 |
+
+## Pad RGB LEDs — mapped 2026-10-20
+
+- WS2812-style chain on **PB1**, driven by **SPI1** (port A, DO = PB1; `IOMAP CON1` bit 4 = 0),
+  `CON = 0x4021`, DMA (`ADR`, `CNT`), ~6 MHz (`BAUD = clk_get("spi") / 6 MHz - 1`; 24 MHz → 3).
+- One SPI byte per LED bit, MSB first: **`0xFC` = 1, `0xC0` = 0**; colour word **G<<16 | R<<8 | B**;
+  frame = 2 zero bytes, 16 × 24 bytes, zeros up to 548 bytes (the reset gap), as the stock
+  firmware sends it (`1e10500`).
+- Chain index under each pad: the table above (confirmed by lighting it under the finger).
 
 ## Flash layout (from the 004 dump)
 

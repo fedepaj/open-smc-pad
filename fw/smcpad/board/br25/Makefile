@@ -294,6 +294,7 @@ c_SRC_FILES := \
 	../../../../apps/smcpad/examples/gamebox/key_mapping.c \
 	../../../../apps/smcpad/examples/idle/app_idle.c \
 	../../../../apps/smcpad/examples/smcpad_test/smcpad_bringup.c \
+	../../../../apps/smcpad/examples/smcpad_test/smcpad_pads.c \
 	../../../../apps/smcpad/examples/keyboard/app_keyboard.c \
 	../../../../apps/smcpad/examples/keyfob/app_keyfob.c \
 	../../../../apps/smcpad/examples/keypage/app_keypage.c \

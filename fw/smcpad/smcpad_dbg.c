@@ -133,11 +133,18 @@ static u32 dbg_write(const char *buf, u32 len)
     return done;
 }
 
+/* The 1200-baud touch is honoured wherever the console is reading, long commands included. */
+extern volatile int smcpad_usb_touch_1200;
+extern void smcpad_on_touch_1200(void);
+
 u32 smcpad_dbg_read(char *buf, u32 len)
 {
     u32 n;
 
     tud_task();
+    if (smcpad_usb_touch_1200) {
+        smcpad_on_touch_1200();
+    }
     if (!smcpad_dbg_ready() || !tud_cdc_available()) {
         return 0;
     }

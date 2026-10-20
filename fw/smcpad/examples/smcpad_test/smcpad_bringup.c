@@ -673,6 +673,11 @@ static void cmd_help(void)
         "  U [hex]           reset into bootloader update mode (default 5a00 = USB)\r\n"
         "  J                 drop off USB and jump to the mask ROM (download mode if keyed)\r\n"
         "  B                 reset into our bootloader's DFU mode (1200-baud touch does the same)\r\n"
+        "pads and pad LEDs:\r\n"
+        "  A                 live ADC values of the 16 pad positions\r\n"
+        "  W                 pad wizard: press pads 1..16, maps ADC position -> pad -> LED\r\n"
+        "  n [<i> <rrggbb>]  pad RGB: chain LED i only (n a <rrggbb> = all, n = off)\r\n"
+        "  N                 walk the RGB chain one LED at a time\r\n"
         "  X <mode> [n] [sector]  flash-death bisection: 0 irq-off spin, 1 +SFC off/on,\r\n"
         "                    2 +status polls, 3 +WREN/WRDI, 4 +real erase\r\n"
         "  ub/uw/uv/uc       firmware update (host/update.py drives these)\r\n"
@@ -1717,6 +1722,16 @@ static void cmd_enter_bootloader(void)
 #endif
 }
 
+/* 1200-baud touch (smcpad_dbg_read sees it): the Arduino way into the uploader. */
+void smcpad_on_touch_1200(void)
+{
+#if SMCPAD_APP_DIR == 0x1000
+    cmd_jump_to_rom();
+#else
+    cmd_enter_bootloader();
+#endif
+}
+
 /*
  * Ask the bootloader to come up in update mode instead of running us, then reset.
  *
@@ -1747,6 +1762,12 @@ static void cmd_update_mode(u32 type)
     local_irq_disable();
     cpu_reset();
 }
+
+/* smcpad_pads.c */
+extern void smcpad_cmd_pads_live(void);
+extern void smcpad_cmd_pads_wizard(void);
+extern void smcpad_cmd_rgb(int all, int idx, u32 rgb);
+extern void smcpad_cmd_rgb_walk(void);
 
 static void run_command(const char *line)
 {
@@ -1975,6 +1996,27 @@ static void run_command(const char *line)
     case 'B':
         cmd_enter_bootloader();
         break;
+    case 'A':
+        smcpad_cmd_pads_live();
+        break;
+    case 'W':
+        smcpad_cmd_pads_wizard();
+        break;
+    case 'N':
+        smcpad_cmd_rgb_walk();
+        break;
+    case 'n':
+        rest = skip_spaces(line + 1);
+        if (!*rest) {
+            smcpad_cmd_rgb(0, -1, 0);
+        } else if (*rest == 'a' && parse_hex(rest + 1, &value)) {
+            smcpad_cmd_rgb(1, 0, value);
+        } else if ((rest = parse_hex(rest, &pin)) && parse_hex(rest, &value) && pin < 16) {
+            smcpad_cmd_rgb(0, (int)pin, value);
+        } else {
+            smcpad_dbg_puts("usage: n | n <0..f> <rrggbb> | n a <rrggbb>\r\n");
+        }
+        break;
     case 'Z':
         smcpad_dbg_puts("resetting\r\n");
         smcpad_delay_ms(300);
@@ -2046,17 +2088,6 @@ void smcpad_bringup_start(void)
         u32 got = smcpad_dbg_read(chunk, sizeof(chunk));
 
 #if SMCPAD_TINYUSB
-        {
-            extern volatile int smcpad_usb_touch_1200;
-
-            if (smcpad_usb_touch_1200) {
-#if SMCPAD_APP_DIR == 0x1000
-                cmd_jump_to_rom();
-#else
-                cmd_enter_bootloader();         /* the Arduino way into the uploader */
-#endif
-            }
-        }
 #endif
 
         for (u32 i = 0; i < got; i++) {
