@@ -51,6 +51,16 @@ static int idle_event_handler(struct application *app, struct sys_event *event)
     case SYS_KEY_EVENT:
         return 0;
     case SYS_BT_EVENT:
+#if TCFG_USER_BLE_ENABLE
+        /* BT_STATUS_INIT_OK -> btstack_ble_start_after_init() -> bt_ble_init() (BLE-MIDI) */
+        if ((u32)event->arg == SYS_BT_EVENT_TYPE_CON_STATUS) {
+            extern int bt_comm_ble_status_event_handler(struct bt_event *bt);
+            bt_comm_ble_status_event_handler(&event->u.bt);
+        } else if ((u32)event->arg == SYS_BT_EVENT_TYPE_HCI_STATUS) {
+            extern int bt_comm_ble_hci_event_handler(struct bt_event *bt);
+            bt_comm_ble_hci_event_handler(&event->u.bt);
+        }
+#endif
         return 0;
     case SYS_DEVICE_EVENT:
         return 0;

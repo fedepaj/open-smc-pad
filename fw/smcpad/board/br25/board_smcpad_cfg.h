@@ -377,7 +377,7 @@ DAC硬件上的连接方式,可选的配置：
 //                                  蓝牙配置                                       //
 //*********************************************************************************//
 #define TCFG_USER_TWS_ENABLE                      0   //tws功能使能
-#define TCFG_USER_BLE_ENABLE                      0   //BLE功能使能
+#define TCFG_USER_BLE_ENABLE                      1   //BLE功能使能 (BLE-MIDI, smcpad_blemidi.c)
 #define TCFG_USER_EDR_ENABLE                      0   //EDR功能使能
 
 #define USER_SUPPORT_PROFILE_SPP    0

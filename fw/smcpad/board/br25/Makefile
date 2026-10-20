@@ -307,7 +307,7 @@ c_SRC_FILES := \
 	../../../../apps/smcpad/modules/aec/br25/audio_aec.c \
 	../../../../apps/smcpad/modules/bt/app_comm_ble.c \
 	../../../../apps/smcpad/modules/bt/app_comm_edr.c \
-	../../../../apps/smcpad/modules/bt/ble_hogp.c \
+	../../../../apps/smcpad/examples/smcpad_test/smcpad_blemidi.c \
 	../../../../apps/smcpad/modules/bt/edr_hid_user.c \
 	../../../../apps/smcpad/modules/misc.c \
 	../../../../apps/smcpad/modules/power/app_charge.c \

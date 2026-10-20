@@ -64,6 +64,11 @@ static void led_show(void)
     if (!led_ready) {
         led_init();
     }
+    {
+        u32 clk = clk_get("spi");               /* BLE start (Y) changes the clocks */
+
+        SPI1_BAUD = clk / LED_SPI_HZ ? clk / LED_SPI_HZ - 1 : 0;
+    }
     memset(led_buf, 0, sizeof(led_buf));
     for (u32 i = 0; i < NPADS; i++) {
         u32 c = led_rgb[i];
@@ -319,6 +324,58 @@ void smcpad_cmd_pads_wizard(void)
     }
     led_show();
     smcpad_delay_ms(5000);
+    led_all(0);
+    led_show();
+}
+
+/* K: play the pads over BLE-MIDI (console Y first). Note 36 + stock pad index (bottom-left =
+ * 0, MPC style), velocity from the ADC value, the pad's LED lit while it is held. Slow -- a
+ * full scan takes ~100 ms through the SDK's ADC scan -- but enough to test the chain. */
+extern int blemidi_send(const u8 *msg, u32 len);
+
+void smcpad_cmd_pads_midi(void)
+{
+    u16 v[NPADS];
+    u8 on[NPADS] = { 0 };
+    char c;
+
+    smcpad_dbg_puts("pads -> BLE-MIDI notes 36..51 (any key stops)\r\n");
+    led_all(0);
+    led_show();
+    while (!smcpad_dbg_read(&c, 1)) {
+        int changed = 0;
+
+        pads_read(v);
+        for (u32 pos = 0; pos < NPADS; pos++) {
+            u32 pad = stock_adc_to_pad[pos], led = stock_pad_to_led[pad];
+            u8 msg[3];
+
+            if (!on[pos] && v[pos] > 150) {
+                u32 vel = v[pos] / 7;
+
+                msg[0] = 0x90;
+                msg[1] = (u8)(36 + pad);
+                msg[2] = (u8)(vel > 127 ? 127 : vel < 1 ? 1 : vel);
+                blemidi_send(msg, 3);
+                on[pos] = 1;
+                led_rgb[led] = 0x00FF40;
+                changed = 1;
+                smcpad_dbg_kv("note on", 36 + pad);
+            } else if (on[pos] && v[pos] < 80) {
+                msg[0] = 0x80;
+                msg[1] = (u8)(36 + pad);
+                msg[2] = 0;
+                blemidi_send(msg, 3);
+                on[pos] = 0;
+                led_rgb[led] = 0;
+                changed = 1;
+            }
+        }
+        if (changed) {
+            led_show();
+        }
+        clr_wdt();
+    }
     led_all(0);
     led_show();
 }

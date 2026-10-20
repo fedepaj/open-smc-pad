@@ -678,6 +678,9 @@ static void cmd_help(void)
         "  W                 pad wizard: press pads 1..16, maps ADC position -> pad -> LED\r\n"
         "  n [<i> <rrggbb>]  pad RGB: chain LED i only (n a <rrggbb> = all, n = off)\r\n"
         "  N                 walk the RGB chain one LED at a time\r\n"
+        "bluetooth:\r\n"
+        "  Y                 start BLE-MIDI (advertises as SMC-PAD); again = status\r\n"
+        "  K                 play the pads over BLE-MIDI (notes 36..51, LEDs follow)\r\n"
         "  X <mode> [n] [sector]  flash-death bisection: 0 irq-off spin, 1 +SFC off/on,\r\n"
         "                    2 +status polls, 3 +WREN/WRDI, 4 +real erase\r\n"
         "  ub/uw/uv/uc       firmware update (host/update.py drives these)\r\n"
@@ -1996,6 +1999,16 @@ static void run_command(const char *line)
     case 'B':
         cmd_enter_bootloader();
         break;
+    case 'K': {
+        extern void smcpad_cmd_pads_midi(void);
+        smcpad_cmd_pads_midi();
+        break;
+    }
+    case 'Y': {
+        extern void blemidi_start(void);
+        blemidi_start();
+        break;
+    }
     case 'S': {
         extern int smcpad_flash_read_sr(u8 *sr1, u8 *sr2);
         u8 sr1 = 0, sr2 = 0;
