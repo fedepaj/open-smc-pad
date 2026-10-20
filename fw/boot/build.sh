@@ -37,9 +37,9 @@ docker run --rm --platform linux/amd64 \
             $T/objdump -d out/$name.elf > out/$name.dis
             echo "$name:"; $T/objdump -h out/$name.elf | grep -E "start|ram|bss"
         }
-        link boot boot.ld boot.c dfu.c flash.c usb_desc.c libc.c /fw/smcpad/usb/dcd_br25.c \
+        link boot boot.ld boot.c dfu.c flash.c jlfs.c usb_desc.c libc.c /fw/smcpad/usb/dcd_br25.c \
             /tinyusb/src/tusb.c /tinyusb/src/common/tusb_fifo.c /tinyusb/src/device/usbd.c \
             /tinyusb/src/device/usbd_control.c /tinyusb/src/class/dfu/dfu_device.c
-        link install install.ld install.c flash.c libc.c
+        link install install.ld install.c flash.c jlfs.c libc.c
     '
 ls -l "$ROOT/fw/boot/out/boot.bin" "$ROOT/fw/boot/out/install.bin"

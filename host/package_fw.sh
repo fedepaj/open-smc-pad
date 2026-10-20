@@ -11,6 +11,7 @@
 #                        boot mode, boot_area.bin is the bootloader's)
 #   fw_area_raw.bin      what gets written at 0x1000, SFC-encrypted where it must be
 #   expected_with_fw.bin the whole 512 KB flash as it must read back afterwards
+#   boot_update.bin      (boot) the bootloader update package, host/dfu_flash.sh --bootloader
 #
 # Layout with the bootloader: both directories declare the VM at 0x71000 (0x4000 bytes), so the
 # SFC decrypts everything below it -- bootloader and application -- in every boot phase, and
@@ -45,6 +46,7 @@ img = boot + b"\xff" * (app_dir - 0x1000 - len(boot)) + app
 pathlib.Path("work/flash/fw_area_raw.bin").write_bytes(img)
 print(f"bootloader {0x1000:#x}..{0x1000 + len(boot):#x}, application {app_dir:#x}..{app_dir + len(app):#x}")
 EOF
+        python3 host/bootpkg.py                     # work/flash/boot_update.bin (DFU alt 2)
         ;;
     *)  echo "usage: $0 [solo|boot]" >&2; exit 2 ;;
 esac

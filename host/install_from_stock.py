@@ -27,24 +27,17 @@ import struct
 import subprocess
 import sys
 import time
-import zlib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 
+import bootpkg                                       # noqa: E402
 import jlimage as J                                  # noqa: E402
 from sinco_flash import FlashLink                    # noqa: E402
 
-INSTALL_DIR = 0x41000           # fw/boot/install.c, install.ld
-STAGE = 0x43000
-STAGE_END = 0x4D000
-STAGE_MAGIC = 0x49434D53        # "SMCI"
-PAYLOAD_OFF = 0x1000            # from STAGE
-DEST = 0x1000
-DEST_ERASE_END = 0x26000
-VM = (0x71000, 0x4000)          # as in host/package_fw.sh
+INSTALL_DIR, STAGE, STAGE_END, DEST = bootpkg.INSTALL_DIR, bootpkg.STAGE, bootpkg.STAGE_END, bootpkg.DEST
 SECTOR = 0x1000
 CHUNK = 1024                    # the stock firmware's write limit
 DFU_ID = "1209:0002"
@@ -137,29 +130,11 @@ def build_installer_area(pad):
     """The installer as an app area for INSTALL_DIR, directory modelled on the pad's own."""
     template = J.read_dir(pad.read(DEST, 0x120))
     cfg_e = template[2]
-    cfg = pad.read(DEST + cfg_e.offset, cfg_e.size)
-    code = (ROOT / "fw/boot/out/install.bin").read_bytes()
-    # The uboot maps the directory of whatever app_dir_head points at to CPU
-    # (entry & ~0xFFFF): code in a slot runs at 0x1E00120, as the stock firmware does.
-    entry = J.AREA_VMA + 0x120
-    area = J.build_app_area(code, cfg, template, entry_vma=entry, vm=VM, prct_size=VM[0])
-    if INSTALL_DIR + len(area) > STAGE:
-        die(f"installer area too big ({len(area):#x})")
-    return area
+    return bootpkg.installer_area(template, pad.read(DEST + cfg_e.offset, cfg_e.size))
 
 
 def build_stage():
-    payload = (ROOT / "work/flash/boot_area.bin").read_bytes()
-    head = J.read_dir(payload)[0]
-    if head.offset != J.AREA_VMA + 0x120 or J.crc16(payload[0x20:head.size]) != head.data_crc:
-        die("work/flash/boot_area.bin is not a bootloader area for 0x1000 (host/package_fw.sh boot)")
-    hdr = struct.pack("<7I", STAGE_MAGIC, 1, PAYLOAD_OFF, len(payload),
-                      zlib.crc32(payload), DEST, DEST_ERASE_END)
-    hdr += struct.pack("<I", zlib.crc32(hdr))
-    blob = hdr + b"\xff" * (PAYLOAD_OFF - len(hdr)) + payload
-    if STAGE + len(blob) > STAGE_END:
-        die("staging area too big")
-    return blob
+    return bootpkg.stage(bootpkg.ERASE_STOCK)
 
 
 def in_dfu():

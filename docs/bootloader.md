@@ -36,6 +36,51 @@ Updating the application afterwards:
     SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh && host/package_fw.sh boot
     host/dfu_flash.sh                                       # work/flash/fw_area.bin over DFU
 
+## Updating the bootloader itself (DFU alt 2) -- no Pico
+
+    fw/boot/build.sh && host/package_fw.sh boot     # also builds work/flash/boot_update.bin
+    host/dfu_flash.sh --bootloader                   # ~40 s, verifies the version at the end
+
+The package (`host/bootpkg.py`) is the plaintext image of 0x41000..: the installer's app area
+(fw/boot/install.c) and the staging area (header + the new bootloader's app area, erase_end =
+0x9000). The bootloader writes it (installer part encrypted), and only once **all** of it checks
+out -- installer directory + area CRC, staging header CRC, payload CRC32, payload directory +
+area CRC -- points sector 0 at the installer and resets. The installer rewrites 0x1000..0x9000
+(the application stays), points sector 0 back, erases the slot, resets: new bootloader, same
+application. Verified: 0102 -> 0103 and 0106 -> 0107 by DFU; packages with one flipped bit in
+the installer or in the payload are refused at the manifestation (dfuERROR, "programmed memory
+failed verification") and nothing else changes. The risky windows are the two sector-0 writes
+(tens of ms each), as for the install from the stock firmware.
+
+The version is not in the USB descriptors: `dfu-util -a 2 -U f` returns
+`smcpad-boot <version> <build date>`. **The descriptors never change between versions**: on
+Apple silicon macOS ("allow accessories to connect") takes a device whose descriptors changed
+for a new accessory and leaves it `!registered` until the user approves it (or unlocks the
+Mac) -- bcdDevice 0x0104 and 0x0105 made the updated bootloader invisible to dfu-util, the same
+code as 0x0103 was fine. Same rule for the application and the Arduino core.
+
+## Hardening: a broken application must not lock the pad out
+
+Besides "no valid directory" and the application's own request (`B`, 1200-baud touch), the
+bootloader stays in DFU mode when:
+
+- **SHIFT + PLAY are held at power-up** -- it scans those two key-matrix columns itself
+  (bit-banged 595s, sense on PC1; a sense line that reads low with no column selected is
+  ignored) and puts every GPIO register it touched back;
+- **the application crash-loops**: every boot increments a counter at 0x31AD8 (with a check
+  word, so power-up RAM reads as 0); the application clears it after ~3 s of running
+  (`smcpad_boot_ok()` in the console; the Arduino core must do the same). The 4th boot in a
+  row that was never confirmed stays in DFU mode. Verified with quick `Z` resets: reason 4;
+- **the application area fails its CRC** (the whole area against the directory's data_crc,
+  table-free CRC16 in `.start`, a few tens of ms at boot).
+
+In DFU mode the SHIFT button's LED blinks. The reason is in the diagnostics (`boot.magic`
+low digit: 1 asked, 2 no app, 3 keys, 4 crash loop, 5 bad CRC).
+
+Still open: block-protecting 0x0..0x8000 in the flash status register (what the SDK's
+`update_norflash_write_protect` does to it at boot needs checking first), and power cuts at
+random points of a DFU transfer and of a bootloader update (needs hands on the switch).
+
 ## Boot decision (fw/boot/boot.c, runs in place from flash)
 
 The factory uboot jumps to the bootloader's entry with r0 = `BOOT_DEVICE_INFO *`. Before
@@ -43,8 +88,9 @@ touching any hardware:
 
 - `BOOT_MAGIC_DFU` (0xB007DF00) at `0x31AE0` (the SDK's UPDATA_BEG, kept across a chip reset)
   -> clear it, DFU mode. The application sets it for the console's `B` and the 1200-baud touch.
-- otherwise, the application's directory at 0x9000 is valid (header CRC, entry = 0x1E08120,
-  size within the area) -> hand over; else DFU mode.
+- no valid directory at 0x9000 (header CRC, entry = 0x1E08120, size within the area), SHIFT +
+  PLAY held, a crash loop, or a failed area CRC -> DFU mode (see "Hardening");
+- otherwise hand over.
 
 **Handing over** = what the uboot does for a directory elsewhere: the SDK walks its directory at
 CPU `app_addr` and converts addresses with `flash = cpu - app_addr + sfc_base_addr`
@@ -63,8 +109,9 @@ timer 0 on the 24 MHz oscillator is the millisecond clock, the watchdog is fed t
 `p33_or_1byte`. USB came up on the uboot's clock setup as it is (CLK_CON1 = 0x80000000,
 PLL_CON = 0x3440002B).
 
-USB id `1209:0002` "SMC-PAD bootloader" (pid.codes test PID; the application is `1209:0001`).
-DFU 1.1, 4096-byte transfers (one sector per block), manifestation tolerant:
+USB id `1209:0002` "SMC-PAD bootloader" (pid.codes test PID; the application is `1209:0001`),
+bcdDevice fixed at 0x0100. DFU 1.1, 4096-byte transfers (one sector per block), manifestation
+tolerant, three alternates:
 
 - **alt 0 "app"**: the application's app area, plaintext (`work/flash/fw_area.bin`). The
   bootloader encrypts with the chip key from `BOOT_DEVICE_INFO.chip_id`, so the same file fits
@@ -76,6 +123,8 @@ DFU 1.1, 4096-byte transfers (one sector per block), manifestation tolerant:
   Upload returns the area decrypted: `dfu-util -U` gives back the downloaded file byte for byte.
 - **alt 1 "flash"**: read-only, the whole 512 KB raw, identical to a download-mode read
   (a backup without the Pico).
+- **alt 2 "bootloader"**: download = bootloader update package, upload = the version line
+  (see "Updating the bootloader itself").
 
 It goes back to the application on DFU_DETACH (`dfu-util -e`), 1.5 s after a good
 manifestation, or -- when it was only asked for and the application is valid -- if the host

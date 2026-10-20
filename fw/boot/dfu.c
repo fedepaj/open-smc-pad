@@ -15,6 +15,9 @@
  *
  * Alternate setting 1 ("flash") is read-only: the whole chip as raw physical bytes, the same
  * as a download-mode read -- a backup without the Pico.
+ *
+ * Alternate setting 2 ("bootloader") updates the bootloader itself, through the installer
+ * (fw/boot/install.c): see boot_pkg_block() / boot_pkg_manifest().
  */
 #include <string.h>
 #include "boot.h"
@@ -23,6 +26,8 @@
 #define BLOCK               CFG_TUD_DFU_XFER_BUFSIZE        /* one flash sector per block */
 #define DFU_ALT_APP         0
 #define DFU_ALT_FLASH       1
+#define DFU_ALT_BOOT        2
+#define BOOT_PKG_MAX        (STAGE_END - INSTALL_DIR)
 #define FLASH_SIZE          0x80000u
 
 #define USB_CON0            REG32(0x1E1800)
@@ -55,6 +60,7 @@ static u32 next_off;                        /* where the next block goes; ~0 = r
 static u32 area_size, area_crc_want;
 static u16 area_crc;
 static int short_block_seen;
+static u32 boot_next;                       /* alt 2: next offset into the package; ~0 = refused */
 
 static u32 millis(void)
 {
@@ -70,37 +76,6 @@ uint32_t tusb_time_millis_api(void)
     return millis();
 }
 
-static u16 crc16_update(u16 crc, const u8 *p, u32 n)
-{
-    while (n--) {
-        crc ^= (u16)(*p++) << 8;
-        for (int i = 0; i < 8; i++) {
-            crc = (crc & 0x8000) ? (u16)((crc << 1) ^ 0x1021) : (u16)(crc << 1);
-        }
-    }
-    return crc;
-}
-
-static u32 rd32(const u8 *p)
-{
-    return p[0] | p[1] << 8 | p[2] << 16 | (u32)p[3] << 24;
-}
-
-/* The SFC cipher (host/jlimage.py sfc_cipher): per 32-byte block of the mapped address space,
- * an LFSR keystream seeded with chip_key ^ (cpu_offset >> 2).  Symmetric. */
-static void sfc_cipher(u8 *buf, u32 len, u32 flash_off)
-{
-    for (u32 i = 0; i < len; i += 32) {
-        u32 key = chip_key ^ ((flash_off + i - SFC_FLASH_BASE) >> 2);
-        u32 n = len - i < 32 ? len - i : 32;
-
-        for (u32 j = 0; j < n; j++) {
-            buf[i + j] ^= (u8)key;
-            key = ((key << 1) ^ ((key & 0x8000) ? 0x1021 : 0)) & 0xFFFF;
-        }
-    }
-}
-
 static int dir_ok(const u8 *d, u32 len)
 {
     u32 size = rd32(d + DIR_SIZE);
@@ -109,33 +84,12 @@ static int dir_ok(const u8 *d, u32 len)
            rd32(d + DIR_OFFSET) == APP_ENTRY && size > 0x120 && size <= APP_AREA_MAX;
 }
 
-/* Erase the sector at `off` (relative to APP_DIR) and program `len` plaintext bytes there,
- * encrypted, then read back and compare.  `buf` is clobbered. */
-static int write_sector(u32 off, u8 *buf, u32 len)
+/* Encrypt `len` plaintext bytes (buf is clobbered) for the application sector at `off` and
+ * write them there, verified. */
+static int write_app_sector(u32 off, u8 *buf, u32 len)
 {
-    u32 addr = APP_DIR + off;
-    u8 check[64];
-
-    sfc_cipher(buf, len, addr);
-    if (flash_erase_sector(addr)) {
-        return -1;
-    }
-    for (u32 a = 0; a < len; a += PAGE_SIZE) {
-        u32 n = len - a < PAGE_SIZE ? len - a : PAGE_SIZE;
-
-        if (flash_program(addr + a, buf + a, n)) {
-            return -2;
-        }
-        wdt_kick();
-    }
-    for (u32 a = 0; a < len; a += sizeof(check)) {
-        u32 n = len - a < sizeof(check) ? len - a : sizeof(check);
-
-        if (flash_read(addr + a, check, n) || memcmp(check, buf + a, n)) {
-            return -3;
-        }
-    }
-    return 0;
+    sfc_cipher(buf, len, APP_DIR + off, chip_key);
+    return flash_write_sector(APP_DIR + off, buf, len);
 }
 
 static void fail(u32 code, uint8_t status)
@@ -153,9 +107,71 @@ uint32_t tud_dfu_get_timeout_cb(uint8_t alt, uint8_t state)
     return state == DFU_DNBUSY ? 60 : 20;   /* a sector erase + 16 pages; the manifestation */
 }
 
+/* Alt 2: a bootloader update package -- the image of INSTALL_DIR..STAGE_END, plaintext: the
+ * installer's app area (encrypted here as it is written) and, from STAGE on, the staging area
+ * (header + the new bootloader's app area, stored as is). Nothing outside that range is
+ * touched until the manifestation has checked all of it. */
+static void boot_pkg_block(uint16_t block_num, uint8_t const *data, uint16_t length)
+{
+    u32 off = (u32)block_num * BLOCK;
+
+    if (block_num == 0) {
+        boot_next = 0;
+        app_ok = 0;                         /* a large application may reach into the slot */
+    }
+    if (boot_next != off || off + length > BOOT_PKG_MAX || (length & 31)) {
+        boot_next = ~0u;
+        fail(0x301, DFU_STATUS_ERR_ADDRESS);
+        return;
+    }
+    memcpy(work, data, length);
+    if (INSTALL_DIR + off < STAGE) {
+        sfc_cipher(work, length, INSTALL_DIR + off, chip_key);
+    }
+    if (flash_write_sector(INSTALL_DIR + off, work, length)) {
+        boot_next = ~0u;
+        fail(0x302, DFU_STATUS_ERR_WRITE);
+        return;
+    }
+    boot_next = off + length;
+    BOOT_DIAG->blocks++;
+    tud_dfu_finish_flashing(DFU_STATUS_OK);
+}
+
+/* Everything checked, then sector 0 points at the installer and we reset into it: it puts the
+ * new bootloader at 0x1000 (not touching the application) and points sector 0 back. */
+static void boot_pkg_manifest(void)
+{
+    struct stage_header h;
+
+    if (boot_next == ~0u || boot_next < STAGE - INSTALL_DIR) {
+        fail(0x311, DFU_STATUS_ERR_VERIFY);
+        return;
+    }
+    if (!area_check(INSTALL_DIR, SFC_CPU_BASE + 0x120, STAGE - INSTALL_DIR, 1, chip_key)) {
+        fail(0x312, DFU_STATUS_ERR_VERIFY);         /* not an installer for the slot */
+        return;
+    }
+    if (stage_check(&h) || h.erase_end != DEST_ERASE_UPDATE) {
+        fail(0x313, DFU_STATUS_ERR_VERIFY);         /* no good bootloader in it, or a stock install */
+        return;
+    }
+    if (set_boot_dir(INSTALL_DIR)) {
+        fail(0x314, DFU_STATUS_ERR_WRITE);
+        return;
+    }
+    BOOT_DIAG->events |= 16;
+    reboot_at = millis() + 300;
+    tud_dfu_finish_flashing(DFU_STATUS_OK);
+}
+
 void tud_dfu_download_cb(uint8_t alt, uint16_t block_num, uint8_t const *data, uint16_t length)
 {
     BOOT_DIAG->events |= 4;
+    if (alt == DFU_ALT_BOOT) {
+        boot_pkg_block(block_num, data, length);
+        return;
+    }
     if (alt != DFU_ALT_APP) {
         fail(0x100, DFU_STATUS_ERR_WRITE);          /* the raw flash is read-only */
         return;
@@ -194,7 +210,7 @@ void tud_dfu_download_cb(uint8_t alt, uint16_t block_num, uint8_t const *data, u
     }
     area_crc = crc16_update(area_crc, data, length);
     memcpy(work, data, length);
-    if (write_sector(next_off, work, length)) {
+    if (write_app_sector(next_off, work, length)) {
         fail(0x105, DFU_STATUS_ERR_WRITE);
         return;
     }
@@ -206,6 +222,10 @@ void tud_dfu_download_cb(uint8_t alt, uint16_t block_num, uint8_t const *data, u
 
 void tud_dfu_manifest_cb(uint8_t alt)
 {
+    if (alt == DFU_ALT_BOOT) {
+        boot_pkg_manifest();
+        return;
+    }
     if (alt != DFU_ALT_APP) {
         fail(0x200, DFU_STATUS_ERR_WRITE);
         return;
@@ -215,7 +235,7 @@ void tud_dfu_manifest_cb(uint8_t alt)
         return;
     }
     memcpy(work, dir_block, dir_len);
-    if (write_sector(0, work, dir_len)) {
+    if (write_app_sector(0, work, dir_len)) {
         fail(0x202, DFU_STATUS_ERR_WRITE);
         return;
     }
@@ -239,10 +259,30 @@ uint16_t tud_dfu_upload_cb(uint8_t alt, uint16_t block_num, uint8_t *data, uint1
         }
         return flash_read(off, data, length) ? 0 : length;
     }
-    if (flash_read(APP_DIR, head, sizeof(head))) {
+    if (alt == DFU_ALT_BOOT) {              /* the version line, e.g. "smcpad-boot 0106 Oct 20 2026" */
+        static const char hex[] = "0123456789abcdef";
+        static const char tail[] = " " __DATE__ " " __TIME__ "\n";
+        static const char head_s[] = "smcpad-boot ";
+        u32 n = 0;
+
+        if (block_num != 0) {
+            return 0;
+        }
+        for (u32 i = 0; head_s[i] && n < length; i++) {
+            data[n++] = (uint8_t)head_s[i];
+        }
+        for (int sh = 12; sh >= 0 && n < length; sh -= 4) {
+            data[n++] = (uint8_t)hex[(BOOT_VERSION >> sh) & 0xF];
+        }
+        for (u32 i = 0; tail[i] && n < length; i++) {
+            data[n++] = (uint8_t)tail[i];
+        }
+        return (uint16_t)n;
+    }
+    if (alt != DFU_ALT_APP || flash_read(APP_DIR, head, sizeof(head))) {
         return 0;
     }
-    sfc_cipher(head, sizeof(head), APP_DIR);
+    sfc_cipher(head, sizeof(head), APP_DIR, chip_key);
     size = rd32(head + DIR_SIZE);
     if (crc16_update(0, head + 2, 30) != (head[0] | head[1] << 8) || size > APP_AREA_MAX ||
         off >= size) {
@@ -254,7 +294,7 @@ uint16_t tud_dfu_upload_cb(uint8_t alt, uint16_t block_num, uint8_t *data, uint1
     if (flash_read(APP_DIR + off, data, length)) {
         return 0;
     }
-    sfc_cipher(data, length, APP_DIR + off);
+    sfc_cipher(data, length, APP_DIR + off, chip_key);
     return length;
 }
 
@@ -275,6 +315,36 @@ void tud_mount_cb(void)
 }
 
 /* ------------------------------------------------------------------------------- main */
+
+/* The SHIFT button's LED blinks while the bootloader waits (docs/hardware.md, button LEDs: a
+ * 3x4 multiplex, phases PA3/PC2/PC3 and segments PA5/PA2/PA0/PA1, all active low; SHIFT is
+ * phase 0 = PA3, segment 2 = PA0). */
+#define PORTA(o)            REG32(0x1E5000u + (o))
+#define PORTC(o)            REG32(0x1E5080u + (o))
+#define LED_A_PINS          ((1u << 3) | (1u << 5) | (1u << 2) | (1u << 0) | (1u << 1))
+#define LED_C_PINS          ((1u << 2) | (1u << 3))
+
+static void led_init(void)
+{
+    PORTA(0x10) &= ~LED_A_PINS;             /* no pulls */
+    PORTA(0x14) &= ~LED_A_PINS;
+    PORTC(0x10) &= ~LED_C_PINS;
+    PORTC(0x14) &= ~LED_C_PINS;
+    PORTA(0x00) |= LED_A_PINS;              /* everything off */
+    PORTC(0x00) |= LED_C_PINS;
+    PORTA(0x08) &= ~LED_A_PINS;
+    PORTC(0x08) &= ~LED_C_PINS;
+    PORTA(0x00) &= ~(1u << 0);              /* SHIFT's segment sinks; its phase blinks */
+}
+
+static void led_set(int on)
+{
+    if (on) {
+        PORTA(0x00) &= ~(1u << 3);
+    } else {
+        PORTA(0x00) |= 1u << 3;
+    }
+}
 
 static __attribute__((noreturn)) void reboot(void)
 {
@@ -299,6 +369,7 @@ void dfu_main(u32 key, u32 reason, u32 valid)
     chip_key = key;
     app_ok = valid;
     next_off = ~0u;
+    boot_next = ~0u;
 
     T0_CON = T_PCLR;
     T0_CNT = 0;
@@ -313,6 +384,7 @@ void dfu_main(u32 key, u32 reason, u32 valid)
 
     tusb_init(0, &init);
     d->usb_con0 = USB_CON0;
+    led_init();
 
     for (u32 polls = 0;; polls++) {
         wdt_kick();
@@ -324,6 +396,7 @@ void dfu_main(u32 key, u32 reason, u32 valid)
             d->ms = ms;
             d->polls = polls;
         }
+        led_set((ms / 500) & 1);
         if (reboot_at && (int32_t)(ms - reboot_at) >= 0) {
             reboot();
         }

@@ -2055,18 +2055,30 @@ static void run_command(const char *line)
     smcpad_dbg_puts("> ");
 }
 
+/* Tell the bootloader (fw/boot) this boot worked: clear its crash-loop counter, which it
+ * keeps at 0x31AD8 (count, count ^ 0x5A5AB007; fw/boot/boot.h BOOT_COUNT). Four boots in a row
+ * that never get here and it stays in DFU mode instead of starting us again. */
+static void smcpad_boot_ok(void)
+{
+    ((volatile u32 *)0x31AD8)[0] = 0;
+    ((volatile u32 *)0x31AD8)[1] = 0;
+}
+
 void smcpad_bringup_start(void)
 {
     char line[48];
-    u32 len = 0;
+    u32 len = 0, uptime_ticks = 0;
 
     smcpad_trace("bringup: console start");
 
     /* Wait for the host to open the port; the boot trace goes out on the first success. */
     for (int i = 0; i < (SMCPAD_TINYUSB ? 250 : 100); i++) {
+        char none;
+
         if (smcpad_dbg_ready()) {
             break;
         }
+        smcpad_dbg_read(&none, 0);              /* honours a 1200-baud touch meanwhile */
         smcpad_delay_ms(100);
     }
 #if SMCPAD_TINYUSB
@@ -2107,5 +2119,8 @@ void smcpad_bringup_start(void)
         }
         clr_wdt();
         smcpad_delay_ms(got ? 1 : 10);
+        if (++uptime_ticks == 300) {
+            smcpad_boot_ok();                   /* ~3 s up: not a crash loop */
+        }
     }
 }
