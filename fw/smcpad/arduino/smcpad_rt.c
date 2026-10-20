@@ -2,6 +2,7 @@
  * the bring-up console and the Arduino core. */
 #include "system/includes.h"
 #include "asm/usb.h"
+#include "asm/gpio.h"
 #include "smcpad_usb_cfg.h"
 #include "smcpad_rt.h"
 #include "tusb.h"
@@ -97,6 +98,30 @@ void smcpad_delay_us(uint32_t us)
     /* busy loop, calibrated for the 24 MHz system clock (coarse) */
     for (volatile uint32_t i = 0; i < us * 4; i++) {
     }
+}
+
+/* ------------------------------------------------------------------ GPIO */
+
+void smcpad_gpio_mode(uint32_t gpio, uint32_t mode)
+{
+    gpio_set_pull_up(gpio, mode == SMCPAD_GPIO_INPUT_PULLUP);
+    gpio_set_pull_down(gpio, mode == SMCPAD_GPIO_INPUT_PULLDOWN);
+    if (mode == SMCPAD_GPIO_OUTPUT) {
+        gpio_set_direction(gpio, 0);
+        return;
+    }
+    gpio_set_direction(gpio, 1);
+    gpio_set_die(gpio, mode != SMCPAD_GPIO_ANALOG);
+}
+
+void smcpad_gpio_write(uint32_t gpio, uint32_t value)
+{
+    gpio_set_output_value(gpio, value ? 1 : 0);
+}
+
+int smcpad_gpio_read(uint32_t gpio)
+{
+    return gpio_read(gpio);
 }
 
 /* ------------------------------------------------------------------ USB serial */

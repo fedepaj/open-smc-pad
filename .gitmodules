@@ -39,3 +39,6 @@
 [submodule "ref/smk37-firmware-custom-mod"]
 	path = ref/smk37-firmware-custom-mod
 	url = https://github.com/amalahama/smk37-firmware-custom-mod
+[submodule "third_party/ArduinoCore-API"]
+	path = third_party/ArduinoCore-API
+	url = https://github.com/arduino/ArduinoCore-API.git

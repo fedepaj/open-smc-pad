@@ -92,8 +92,24 @@ docker run --rm --platform linux/amd64 -e TEXT_BASE="$TEXT_BASE" \
             # the precompiled core: the native output of the LTO step, and the linker script
             mkdir -p /out/core
             cp sdk.elf.o /out/core/smcpad_core.o
-            cp ../sdk.ld /out/core/sdk.ld
+            # + C++ constructors: .init_array and .ctors (what this clang emits, -fuse-init-array
+            # or not) in flash, walked by smcpad_arduino_run()
+            awk '\''/^        \*\(\.rodata\*\)$/ && !done { print "        . = ALIGN(4);"; print "        __init_array_start = .;"; print "        KEEP(*(SORT(.init_array.*)))"; print "        KEEP(*(.init_array))"; print "        KEEP(*(SORT(.ctors.*)))"; print "        KEEP(*(.ctors))"; print "        __init_array_end = .;"; done = 1 } { print }'\'' ../sdk.ld > /out/core/sdk.ld
+            grep -q __init_array_start /out/core/sdk.ld
             $T/nm /out/core/smcpad_core.o | grep -E " U (setup|loop)$" | sed "s/^/  core needs: /" || true
+            # the native (non-bitcode) members of the SDK archives: what a plain ld may still
+            # need besides the core object (the bitcode is all inside it already)
+            N=$(mktemp -d); rm -f /out/core/libsmcpad_native.a
+            for a in ../liba/*.a; do
+                abs=$(realpath $a); d=$N/$(basename $a .a); mkdir -p $d; (cd $d && $T/ar x $abs)
+                for o in $d/*; do
+                    if [ "$(head -c 4 $o | od -An -c | tr -d " ")" = "177ELF" ]; then
+                        cp $o $N/$(basename $a .a)__$(basename $o)
+                    fi
+                done
+            done
+            $T/ar rcs /out/core/libsmcpad_native.a $N/*__* 2>/dev/null || $T/ar rcs /out/core/libsmcpad_native.a
+            echo "  native archive members: $(ls $N/*__* 2>/dev/null | wc -l)"
         fi
         # app.bin exactly as the SDK post-build builds it (cpu/br25/tools/download.sh):
         # .text (XIP, the crt0 copies what follows from flash by absolute address), then

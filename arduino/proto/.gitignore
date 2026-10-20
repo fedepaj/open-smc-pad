@@ -1,0 +1,5 @@
+build/
+sketch.elf
+sketch.map
+app.bin
+sketch_area.bin

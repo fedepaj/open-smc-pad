@@ -30,6 +30,18 @@ int smcpad_serial_read(void);
 int smcpad_serial_peek(void);
 void smcpad_serial_flush(void);
 
+/* GPIO, by JieLi number: port * 16 + bit (PA0 = 0, PB0 = 16, PC0 = 32) */
+enum {
+    SMCPAD_GPIO_INPUT = 0,
+    SMCPAD_GPIO_OUTPUT = 1,
+    SMCPAD_GPIO_INPUT_PULLUP = 2,
+    SMCPAD_GPIO_INPUT_PULLDOWN = 3,
+    SMCPAD_GPIO_ANALOG = 4,
+};
+void smcpad_gpio_mode(uint32_t gpio, uint32_t mode);
+void smcpad_gpio_write(uint32_t gpio, uint32_t value);
+int smcpad_gpio_read(uint32_t gpio);
+
 /* system */
 void smcpad_enter_bootloader(void);         /* DFU mode of fw/boot; does not return */
 void smcpad_reset(void);                    /* does not return */
