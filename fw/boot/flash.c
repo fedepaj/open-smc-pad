@@ -182,6 +182,61 @@ int flash_program(u32 addr, const u8 *data, u32 len)
     return err ? err : wait_ready();
 }
 
+/* Status registers 1 (cmd 0x05) and 2 (0x35). */
+int flash_read_sr(u32 *sr1, u32 *sr2)
+{
+    u8 a = 0xEE, b = 0xEE;
+    int err;
+
+    cs_level(0);
+    err = spi_xfer(CMD_RDSR, 0) || spi_xfer(0xFF, &a);
+    cs_level(1);
+    cs_level(0);
+    err = err || spi_xfer(0x35, 0) || spi_xfer(0xFF, &b);
+    cs_level(1);
+    *sr1 = a;
+    *sr2 = b;
+    return err ? -1 : 0;
+}
+
+/* Clear the block protection the SDK's update_norflash_write_protect() manages: BP bits
+ * (SR1 0x7C) and CMP (SR2 0x40), every other bit kept (QE above all). Non-volatile, as the
+ * SDK's WREN path writes it: the next firmware sets its own protection at boot. */
+int flash_unprotect(void)
+{
+    u32 sr1, sr2;
+    int err;
+
+    if (flash_read_sr(&sr1, &sr2)) {
+        return -1;
+    }
+    if (!(sr1 & 0x7C) && !(sr2 & 0x40)) {
+        return 0;
+    }
+    err = write_enable();
+    if (!err) {
+        cs_level(0);
+        err = spi_xfer(0x01, 0) || spi_xfer(sr1 & ~0x7Cu, 0) || spi_xfer(sr2 & ~0x40u, 0);
+        cs_level(1);
+    }
+    if (!err) {
+        err = wait_ready();
+    }
+    if (!err && !flash_read_sr(&sr1, &sr2) && (sr2 & 0x40)) {
+        /* chips that take SR2 only through its own command */
+        err = write_enable();
+        if (!err) {
+            cs_level(0);
+            err = spi_xfer(0x31, 0) || spi_xfer(sr2 & ~0x40u, 0);
+            cs_level(1);
+        }
+        if (!err) {
+            err = wait_ready();
+        }
+    }
+    return err;
+}
+
 int flash_read(u32 addr, u8 *buf, u32 len)
 {
     int err;

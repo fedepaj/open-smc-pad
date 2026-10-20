@@ -6,9 +6,9 @@ flashing and update tooling, and the reverse engineering behind them.
 | path | what |
 |---|---|
 | `fw/smcpad/` | the firmware (JieLi SDK app; `usb/` = TinyUSB + our BR25 driver) |
-| `fw/boot/` | the bootloader at 0x1000: bare-metal USB DFU, chains to the application at 0x9000 |
+| `fw/boot/` | the bootloader at 0x1000 (bare-metal USB DFU, chains to the application at 0x9000) and the stock -> ours installer |
 | `fw/build.sh` | build in Docker (`SMCPAD_TINYUSB=1` for the TinyUSB stack, `TEXT_BASE=0x1E08120` behind the bootloader) |
-| `host/` | flashing (`flash_fw.sh` with the Pico, `dfu_flash.sh` over the bootloader), self-update (`update.py`), console, tests, root USB helper (`bridge-rs`) |
+| `host/` | flashing (`flash_fw.sh` with the Pico, `install_from_stock.py` from a stock pad, `dfu_flash.sh` over the bootloader), self-update (`update.py`), console, tests, root USB helper (`bridge-rs`) |
 | `hw/jl-usbkey/` | Raspberry Pi Pico sketch that sends the USB_KEY (ROM download mode) |
 | `docs/` | hardware map, flash layout, USB controller notes, open gaps |
 | `re/` | reverse-engineering notes and captures |

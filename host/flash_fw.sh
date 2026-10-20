@@ -5,6 +5,9 @@
 #
 #   host/flash_fw.sh            # our firmware  (work/flash/fw_area_raw.bin)
 #   host/flash_fw.sh stock      # the factory firmware back
+#   host/flash_fw.sh dump       # read-only: the whole flash into work/flash/dump_*.bin
+#   host/flash_fw.sh write <addr> <raw file>   # one range (raw physical bytes), verified
+#   host/flash_fw.sh cmd "<jl-uboot-tool command>" ...   # e.g. "memread 0x31aa0 64"
 #
 # Runs as you, not root. The one privileged step -- detaching macOS's mass-storage driver from
 # the chip -- is the root helper /usr/local/libexec/smcpad-usb-bridge, started with `sudo -n`
@@ -40,10 +43,25 @@ case "$MODE" in
            size=$(wc -c < "$IMAGE")
            len=$(( (size + 0xFFF) / 0x1000 * 0x1000 ))
            [ $len -gt $((AREA_LEN)) ] && AREA_LEN=$(printf '0x%x' $len) ;;
-    stock) IMAGE="$ROOT/work/restore/code_0x1000_0x26000.bin"
+    stock) # everything up to BTIF, from the factory image: also wipes whatever our layout left
+           # in what the stock firmware takes for its VM (0x26000..0x75000)
+           IMAGE="$ROOT/work/restore/factory_0x1000_0x75000.bin"
+           [ -f "$IMAGE" ] || python3 -c "import sys; d=open('$ROOT/dumps/original_physical_full.bin','rb').read(); open('$IMAGE','wb').write(d[0x1000:0x75000])"
+           AREA_LEN=0x74000
            EXPECTED="$ROOT/dumps/original_physical_full.bin"
            VERIFY="$ROOT/work/restore/verify_last.bin" ;;
-    *)     echo "usage: $0 [fw|stock]" >&2; exit 2 ;;
+    write) # write <addr> <raw file>: just that range, compared on read-back, then boot
+           AREA="${2:?usage: $0 write <addr> <raw file>}"; IMAGE="${3:?usage: $0 write <addr> <raw file>}"
+           AREA_LEN=$(printf '0x%x' $(( ($(wc -c < "$IMAGE") + 0xFFF) / 0x1000 * 0x1000 )))
+           EXPECTED=/dev/null
+           VERIFY="$ROOT/work/flash/verify_last.bin" ;;
+    cmd)   # cmd <jl-uboot-tool commands...>: run them in download mode, e.g. "memread 0x31aa0 64"
+           IMAGE=/dev/null; EXPECTED=/dev/null; VERIFY=/dev/null
+           shift; JL_CMDS=("$@") ;;
+    dump)  # read-only: catch download mode, read the whole flash, leave the chip there
+           IMAGE=/dev/null; EXPECTED=/dev/null
+           VERIFY="$ROOT/work/flash/dump_$(date +%Y%m%d-%H%M%S).bin" ;;
+    *)     echo "usage: $0 [fw|stock|dump|write <addr> <file>|cmd <jl commands>]" >&2; exit 2 ;;
 esac
 
 PY="$ROOT/host/.venv-uboot/bin/python"
@@ -169,11 +187,35 @@ for _ in $(seq 60); do [ -S "$SOCK" ] && break; sleep 0.25; done
 [ -S "$SOCK" ] || { cat "$BRIDGE_LOG"; die "the bridge did not come up"; }
 sed -n 1,2p "$BRIDGE_LOG" | sed 's/^/   /'
 
+if [ "$MODE" = cmd ]; then
+    jl "${JL_CMDS[@]}"; exit $?
+fi
+if [ "$MODE" = dump ]; then
+    note "reading the whole flash"
+    jl "read 0 0x80000 $VERIFY" || die "the tool failed (see above)"
+    echo "   $VERIFY  (the chip stays in download mode: flash it, or power-cycle it)"
+    exit 0
+fi
+
 # ------------------------------------------------------------- write and verify
 note "erase $AREA +$AREA_LEN, write $(basename "$IMAGE"), read back the whole flash"
 jl "erase $AREA $AREA_LEN" "write $AREA $IMAGE" "read 0 0x80000 $VERIFY" \
     || die "the tool failed (see above)"
 [ -f "$VERIFY" ] || die "no read-back file"
+
+if [ "$MODE" = write ]; then
+    note "verifying $AREA +$AREA_LEN"
+    python3 - "$VERIFY" "$IMAGE" "$AREA" <<'EOF' || die "verification failed -- read-back kept at $VERIFY"
+import sys
+got, img, a = open(sys.argv[1], "rb").read(), open(sys.argv[2], "rb").read(), int(sys.argv[3], 0)
+bad = [i for i in range(len(img)) if got[a + i] != img[i]]
+print(f"   {'OK' if not bad else 'MISMATCH at +%#x (%d bytes)' % (bad[0], len(bad))}")
+sys.exit(1 if bad else 0)
+EOF
+    note "booting it"
+    jl "reset 1" || echo "   (reset reported an error -- power-cycle the pad by hand)"
+    exit 0
+fi
 
 # Strict where it matters, informative elsewhere. Sector 0 (uboot, boot pointer) must be
 # untouched and the area we just wrote must match exactly; a difference in either refuses to

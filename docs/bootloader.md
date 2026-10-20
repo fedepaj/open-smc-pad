@@ -1,8 +1,8 @@
 # Bootloader (fw/boot): USB DFU in front of the application
 
 Status (2026-10-20): installed on the pad. It chains to the application, takes it over DFU
-(`host/dfu_flash.sh`, about 14 s round trip, no Pico, no sudo) and survives interrupted
-transfers. It is 9 KB and bare-metal: no JieLi SDK, TinyUSB 0.21 (DFU class) on our
+(`host/dfu_flash.sh`, about 14 s round trip, no Pico, no sudo), survives interrupted
+transfers, and installs on a stock pad without the Pico (`host/install_from_stock.py`). It is 9 KB and bare-metal: no JieLi SDK, TinyUSB 0.21 (DFU class) on our
 `fw/smcpad/usb/dcd_br25.c` driver, polled.
 
 ## Layout
@@ -25,6 +25,11 @@ Build and install (once, with the Pico; afterwards DFU):
     SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh        # the application, linked for 0x9000
     host/package_fw.sh boot                                 # both areas -> work/flash/
     host/flash_fw.sh                                        # download mode, as before
+
+Or, on a pad that only has the stock firmware (no Pico, no sudo; one power cycle by hand):
+
+    host/package_fw.sh boot
+    uv run --with mido --with python-rtmidi host/install_from_stock.py
 
 Updating the application afterwards:
 
@@ -80,6 +85,42 @@ so the host sees the detach.
 Diagnostics: what the last DFU session saw is left at `0x31AA0` (`struct boot_diag`: reason,
 milliseconds, polls, USB/clock registers, events, blocks, last error) and the application's `I`
 prints it.
+
+## Installing from the stock firmware (host/install_from_stock.py, fw/boot/install.c)
+
+Verified 2026-10-20 on a pad restored to the factory image: stock -> installer -> bootloader ->
+application in one run, the only manual step a power cycle.
+
+1. Over USB-MIDI the stock firmware writes (SINCO 0x21/0x22, 1 KB pieces, every byte read back):
+   the installer as an app area at 0x41000 and a staging area at 0x43000 (header with CRC32s +
+   the bootloader's app area in plaintext). Then sector 0's `app_dir_head` is pointed at
+   0x41000: the stock firmware reads sector 0 XOR a fixed ENC keystream (key 0xFFFF,
+   restarting every 256 bytes -- the same on every chip) and writes it raw, so the physical
+   sector is known exactly and only the one 32-byte entry changes (offset + CRC16, each entry
+   ENC-ciphered with 0xFFFF on its own). On a mismatch the original sector goes back.
+2. Power cycle: the uboot runs the installer (from RAM, SFC parked). It checks the staging
+   area; if it does not hold up it points sector 0 back at 0x1000 and the untouched stock
+   firmware boots again. Otherwise it erases 0x1000..0x26000, writes the bootloader encrypted
+   with the chip key, points sector 0 back at 0x1000 (the only window -- tens of ms -- where
+   losing power needs the Pico), erases its own area and resets. Interrupted before that, it
+   simply runs again at the next boot. Afterwards sector 0 is byte for byte the factory one.
+3. The bootloader finds no application, comes up in DFU mode, and the script runs
+   host/dfu_flash.sh.
+
+The installer leaves a record at 0x4C000 ("IDG1", step << 4 | result, SR1/SR2 before and after
+its unprotect, result of the unprotect; 0x3F = done) and a breadcrumb in RAM at 0x31AD0.
+`host/flash_fw.sh dump` / `cmd "memread ..."` read them in download mode.
+
+**How the uboot boots a slot** (read off `sfc_mode_boot` in the user_boot SDK's uboot.a, then
+confirmed): `app_addr = entry & 0xFFFF0000`, `sfc_base_addr = app_dir_head`, and the SFC's
+`BASE_ADR = sfc_base_addr + 0x1000000 - app_addr`, i.e. the CPU address `entry & ~0xFFFF` is
+mapped onto the slot's directory. Code in a slot must therefore be linked at 0x1E00120 like the
+stock firmware -- not at "its" address (the first installer, linked at 0x1E5F120 for 0x60000,
+was entered at flash 0x6F120: reset loop; this is probably also what bricked the day-1 slot).
+The slot is 0x41000 because 0x41000 - 0x1000 is a multiple of 0x40000: the SFC key uses the
+low 16 bits of addr >> 2, so the encryption is the same whether the hardware keys on the CPU or
+on the flash address. (The bootloader's own hand-over to 0x9000 does not go through this: the
+mapping set up for the bootloader stays, and the application is linked at 0x1E08120.)
 
 ## Pitfalls met
 

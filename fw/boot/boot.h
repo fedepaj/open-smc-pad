@@ -65,6 +65,8 @@ int flash_begin(void);
 int flash_erase_sector(u32 addr);
 int flash_program(u32 addr, const u8 *data, u32 len);      /* within one page */
 int flash_read(u32 addr, u8 *buf, u32 len);
+int flash_read_sr(u32 *sr1, u32 *sr2);
+int flash_unprotect(void);
 void wdt_kick(void);
 
 #endif
