@@ -10,9 +10,8 @@
  * byte 0b1lllllll (bits 6..0) and the message (running status allowed). We send one message
  * per packet; we parse what comes in and hand complete messages to blemidi_rx().
  *
- * Replaces modules/bt/ble_hogp.c (HID over GATT) in the build: it provides the hooks the SDK's
- * BLE startup calls (bt_ble_before_start_init, bt_ble_init, bt_ble_exit, ble_module_enable)
- * and stubs for the HID setters modules/bt/app_comm_ble.c still calls.
+ * The stack, the CCC and advertising are the runtime's (fw/smcpad/arduino/smcpad_ble.c); this
+ * file gives it the profile and handles the MIDI characteristic.
  */
 #include "system/app_core.h"
 #include "system/includes.h"
@@ -23,6 +22,7 @@
 #include "le_common.h"
 #include "le_gatt_common.h"
 #include "app_comm_bt.h"
+#include "smcpad_rt.h"
 
 #if TCFG_USER_BLE_ENABLE
 
@@ -31,11 +31,6 @@ extern void smcpad_dbg_kv(const char *tag, u32 value);
 extern void smcpad_dbg_hex16(const char *tag, u32 value);
 
 #define BLEMIDI_NAME            "SMC-PAD"
-
-/* BLE-MIDI packets are small; as ble_hogp.c sizes it */
-#define ATT_LOCAL_MTU_SIZE      (64)
-#define ATT_PACKET_NUMS_MAX     (2)
-#define ATT_SEND_CBUF_SIZE      (ATT_PACKET_NUMS_MAX * (ATT_PACKET_HEAD_SIZE + ATT_LOCAL_MTU_SIZE))
 
 /* ATT database, BTstack's compiled format: entry = size(2) flags(2) handle(2) type(2 or 16)
  * value. Flags: READ 0x02, WRITE_WITHOUT_RESPONSE 0x04, WRITE 0x08, NOTIFY 0x10,
@@ -150,7 +145,7 @@ int blemidi_send(const u8 *msg, u32 len)
     pkt[0] = 0x80 | (ts >> 7);
     pkt[1] = 0x80 | (ts & 0x7F);
     memcpy(pkt + 2, msg, len);
-    if (ble_comm_att_send_data(con_handle, H_MIDI_VALUE, pkt, len + 2, ATT_OP_AUTO_READ_CCC)) {
+    if (!smcpad_ble_notify(H_MIDI_VALUE, pkt, len + 2)) {
         return 0;
     }
     tx_messages++;
@@ -170,205 +165,90 @@ void blemidi_status(void)
     smcpad_dbg_kv("ble-midi messages out", tx_messages);
 }
 
-/* ------------------------------------------------------------------ GATT callbacks */
+/* ------------------------------------------------------------------ GATT (smcpad_ble.c) */
 
-static uint16_t blemidi_att_read(hci_con_handle_t handle, uint16_t att_handle, uint16_t offset,
-                                 uint8_t *buffer, uint16_t buffer_size)
+static uint16_t blemidi_att_read(uint16_t att_handle, uint16_t offset, uint8_t *buffer,
+                                 uint16_t buffer_size)
 {
-    switch (att_handle) {
-    case H_GAP_NAME_VALUE: {
-        const char *name = BLEMIDI_NAME;
-        u16 len = strlen(name);
+    const char *name = BLEMIDI_NAME;
+    u16 len = strlen(name);
 
-        if (offset >= len) {
-            return 0;
-        }
-        if (buffer) {
-            if (buffer_size > len - offset) {
-                buffer_size = len - offset;
-            }
-            memcpy(buffer, name + offset, buffer_size);
-            return buffer_size;
-        }
+    if (att_handle != H_GAP_NAME_VALUE || offset >= len) {
+        return 0;                                               /* MIDI reads are empty */
+    }
+    if (!buffer) {
         return len;
     }
-    case H_MIDI_VALUE:
-        return 0;                                               /* the spec: reads are empty */
-    case H_MIDI_CCC:
-        if (buffer) {
-            buffer[0] = ble_gatt_server_characteristic_ccc_get(handle, att_handle);
-            buffer[1] = 0;
-        }
-        return 2;
-    default:
-        return 0;
+    if (buffer_size > len - offset) {
+        buffer_size = len - offset;
     }
+    memcpy(buffer, name + offset, buffer_size);
+    return buffer_size;
 }
 
-static int blemidi_att_write(hci_con_handle_t handle, uint16_t att_handle, uint16_t mode,
-                             uint16_t offset, uint8_t *buffer, uint16_t buffer_size)
+static void blemidi_att_write(uint16_t att_handle, uint16_t offset, const uint8_t *buffer,
+                              uint16_t buffer_size)
 {
-    switch (att_handle) {
-    case H_MIDI_VALUE:
+    if (att_handle == H_MIDI_VALUE) {
         blemidi_parse(buffer, buffer_size);
-        break;
-    case H_MIDI_CCC:
-        ble_gatt_server_characteristic_ccc_set(handle, att_handle, buffer[0]);
-        notify_on = buffer[0] & 1;
-        smcpad_dbg_kv("ble-midi notify", notify_on);
-        break;
-    default:
-        break;
     }
-    return 0;
 }
 
-static int blemidi_event(int event, u8 *packet, u16 size, u8 *ext_param)
+static void blemidi_event(int event, uint16_t handle, uint16_t value)
 {
     switch (event) {
-    case GATT_COMM_EVENT_CONNECTION_COMPLETE:
-        con_handle = little_endian_read_16(packet, 0);
+    case SMCPAD_BLE_CONNECTED:
+        con_handle = handle;
         notify_on = 0;
         smcpad_dbg_hex16("ble-midi connected, handle", con_handle);
         break;
-    case GATT_COMM_EVENT_DISCONNECT_COMPLETE:
-        if (con_handle == little_endian_read_16(packet, 0)) {
-            con_handle = 0;
-            notify_on = 0;
-            smcpad_dbg_puts("ble-midi disconnected\r\n");
-        }
+    case SMCPAD_BLE_DISCONNECTED:
+        con_handle = 0;
+        notify_on = 0;
+        smcpad_dbg_puts("ble-midi disconnected\r\n");
         break;
-    case GATT_COMM_EVENT_ENCRYPTION_CHANGE:
-        smcpad_dbg_puts("ble-midi link encrypted\r\n");
-        break;
-    case GATT_COMM_EVENT_MTU_EXCHANGE_COMPLETE:
-        smcpad_dbg_kv("ble-midi ATT MTU", little_endian_read_16(packet, 2));
-        break;
-    default:
+    case SMCPAD_BLE_SUBSCRIBE:
+        notify_on = value & 1;
+        smcpad_dbg_kv("ble-midi notify", notify_on);
         break;
     }
-    return 0;
 }
 
-/* ------------------------------------------------------------------ stack configuration */
-
-static const sm_cfg_t blemidi_sm_config = {
-    .slave_security_auto_req = 0,
-    .slave_set_wait_security = 0,
-    .io_capabilities = IO_CAPABILITY_NO_INPUT_NO_OUTPUT,       /* "just works" pairing */
-    .authentication_req_flags = SM_AUTHREQ_BONDING,
-    .min_key_size = 7,
-    .max_key_size = 16,
-    .sm_cb_packet_handler = NULL,
+static const smcpad_ble_callbacks_t blemidi_callbacks = {
+    .read = blemidi_att_read,
+    .write = blemidi_att_write,
+    .event = blemidi_event,
 };
 
-static const gatt_server_cfg_t blemidi_server_config = {
-    .att_read_cb = &blemidi_att_read,
-    .att_write_cb = &blemidi_att_write,
-    .event_packet_handler = &blemidi_event,
-};
-
-static gatt_ctrl_t blemidi_gatt_control = {
-    .mtu_size = ATT_LOCAL_MTU_SIZE,
-    .cbuffer_size = ATT_SEND_CBUF_SIZE,
-    .multi_dev_flag = 0,
-    .server_config = &blemidi_server_config,
-    .client_config = NULL,
-    .sm_config = &blemidi_sm_config,
-    .hci_cb_packet_handler = NULL,
-};
-
-static adv_cfg_t blemidi_adv;
-static u8 adv_data[ADV_RSP_PACKET_MAX], rsp_data[ADV_RSP_PACKET_MAX];
-
-static void blemidi_adv_setup(void)
+/* Bring the stack up (console `Y`); advertising starts once it is ready (smcpad_ble.c). */
+void blemidi_start(void)
 {
     static const u8 midi_uuid_le[16] = {
         0x00, 0xc7, 0xc4, 0x4e, 0xe3, 0x6c, 0x51, 0xa7, 0x33, 0x4b, 0xe8, 0xed, 0x5a, 0x0e, 0xb8, 0x03,
     };
-    const char *name = BLEMIDI_NAME;
-    u8 off = 0;
-
-    off += make_eir_packet_val(&adv_data[off], off, HCI_EIR_DATATYPE_FLAGS,
-                               FLAGS_GENERAL_DISCOVERABLE_MODE | FLAGS_EDR_NOT_SUPPORTED, 1);
-    off += make_eir_packet_data(&adv_data[off], off, HCI_EIR_DATATYPE_COMPLETE_128BIT_SERVICE_UUIDS,
-                                (void *)midi_uuid_le, 16);
-    blemidi_adv.adv_data = adv_data;
-    blemidi_adv.adv_data_len = off;
-
-    off = 0;
-    off += make_eir_packet_data(&rsp_data[off], off, HCI_EIR_DATATYPE_COMPLETE_LOCAL_NAME,
-                                (void *)name, strlen(name));
-    blemidi_adv.rsp_data = rsp_data;
-    blemidi_adv.rsp_data_len = off;
-
-    blemidi_adv.adv_interval = 48;                              /* 30 ms, in 0.625 ms units */
-    blemidi_adv.adv_auto_do = 1;
-    blemidi_adv.adv_type = ADV_IND;
-    blemidi_adv.adv_channel = ADV_CHANNEL_ALL;
-    memset(blemidi_adv.direct_address_info, 0, 7);
-    ble_gatt_server_set_adv_config(&blemidi_adv);
-}
-
-/* Called by the stack (modules/bt/app_comm_ble.c) before / after its init. */
-void bt_ble_before_start_init(void)
-{
-    ble_comm_init(&blemidi_gatt_control);
-}
-
-void bt_ble_init(void)
-{
-    ble_comm_set_config_name(BLEMIDI_NAME, 0);
-    con_handle = 0;
-    ble_gatt_server_set_profile(blemidi_profile, sizeof(blemidi_profile));
-    blemidi_adv_setup();
-    ble_module_enable(1);
-    smcpad_dbg_puts("ble-midi advertising as " BLEMIDI_NAME "\r\n");
-}
-
-void bt_ble_exit(void)
-{
-    ble_module_enable(0);
-    ble_comm_exit();
-}
-
-void ble_module_enable(u8 en)
-{
-    ble_comm_module_enable(en);
-}
-
-/* What modules/bt/app_comm_ble.c sets up for HID over GATT: nothing to do for MIDI. */
-void le_hogp_set_icon(u16 class_type)
-{
-}
-
-void le_hogp_set_ReportMap(u8 *map, u16 size)
-{
-}
-
-void le_hogp_regiest_get_battery(u8 (*get_battery_cbk)(void))
-{
-}
-
-/* Bring the stack up (console `Y`). The system clock goes to BT_NORMAL_HZ, as the SDK's BLE
- * applications do; BT_STATUS_INIT_OK then reaches app_idle.c's event handler, which calls
- * btstack_ble_start_after_init() -> bt_ble_init() above. */
-void blemidi_start(void)
-{
     static u8 started;
-    static const ble_init_cfg_t cfg = { .same_address = 0, .appearance = 0 };
-    extern void bt_pll_para(u32 osc, u32 sys, u8 low_power, u8 xosc);
+    u8 adv[3 + 18], rsp[2 + sizeof(BLEMIDI_NAME) - 1];
 
     if (started) {
         blemidi_status();
         return;
     }
     started = 1;
-    clk_set("sys", BT_NORMAL_HZ);
-    bt_pll_para(TCFG_CLOCK_OSC_HZ, clk_get("sys"), 0, 0);
-    btstack_ble_start_before_init(&cfg, 0);
-    btstack_init();
-    smcpad_dbg_puts("ble stack starting\r\n");
+    adv[0] = 2;                                 /* flags: general discoverable, no BR/EDR */
+    adv[1] = 0x01;
+    adv[2] = 0x06;
+    adv[3] = 17;                                /* complete list of 128-bit service UUIDs */
+    adv[4] = 0x07;
+    memcpy(adv + 5, midi_uuid_le, 16);
+    rsp[0] = sizeof(rsp) - 1;                   /* complete local name */
+    rsp[1] = 0x09;
+    memcpy(rsp + 2, BLEMIDI_NAME, sizeof(rsp) - 2);
+    smcpad_ble_set_name(BLEMIDI_NAME);
+    smcpad_ble_set_profile(blemidi_profile, sizeof(blemidi_profile));
+    smcpad_ble_set_adv(adv, sizeof(adv), rsp, sizeof(rsp), 48, 1);
+    smcpad_ble_begin(&blemidi_callbacks);
+    smcpad_ble_advertise(1);
+    smcpad_dbg_puts("ble stack starting, advertising as " BLEMIDI_NAME "\r\n");
 }
 
 #else

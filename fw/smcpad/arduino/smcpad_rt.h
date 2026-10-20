@@ -82,6 +82,40 @@ void smcpad_led_set(int led, int on);           /* button LEDs */
 void smcpad_rgb_set(int pad, uint32_t rgb);     /* 0xRRGGBB; shown by smcpad_rgb_show() */
 void smcpad_rgb_show(void);
 
+/* ------------------------------------------------------------------ BLE peripheral
+ * (smcpad_ble.c): a GATT server, one central at a time. The ATT database is the caller's, in
+ * BTstack's compiled format (entries: size, flags, handle, type (2 or 16 bytes), value; a
+ * zero size ends it); its dynamic attributes are served by the callbacks, which run in the
+ * BT stack's task: keep them short. CCCs (0x2902, right after their value) are kept here. */
+enum {
+    SMCPAD_BLE_CONNECTED = 1,       /* handle: the connection */
+    SMCPAD_BLE_DISCONNECTED,
+    SMCPAD_BLE_SUBSCRIBE,           /* handle: the value; value: the CCC (1 notify, 2 indicate) */
+};
+
+typedef struct {
+    /* buf NULL: return the value's length; else copy from offset, return the bytes copied */
+    uint16_t (*read)(uint16_t handle, uint16_t offset, uint8_t *buf, uint16_t size);
+    void (*write)(uint16_t handle, uint16_t offset, const uint8_t *data, uint16_t len);
+    void (*event)(int event, uint16_t handle, uint16_t value);
+} smcpad_ble_callbacks_t;
+
+void smcpad_ble_begin(const smcpad_ble_callbacks_t *cb);   /* starts the stack; see ready */
+int smcpad_ble_ready(void);
+void smcpad_ble_set_name(const char *name);
+void smcpad_ble_set_profile(const uint8_t *db, uint16_t len);  /* db must stay valid */
+void smcpad_ble_set_adv(const uint8_t *adv, uint8_t adv_len, const uint8_t *rsp, uint8_t rsp_len,
+                        uint16_t interval, int connectable);    /* AD structures; 0.625 ms */
+void smcpad_ble_advertise(int on);                  /* also again after each disconnection */
+uint16_t smcpad_ble_connection(void);               /* 0 when none */
+uint16_t smcpad_ble_mtu(void);
+void smcpad_ble_address(uint8_t addr[6]);           /* little-endian, as on air */
+void smcpad_ble_central_address(uint8_t addr[6]);
+int smcpad_ble_rssi(void);                          /* 127 when not connected */
+int smcpad_ble_notify(uint16_t handle, const uint8_t *data, uint16_t len);   /* 1 when sent */
+int smcpad_ble_subscribed(uint16_t handle);         /* the value's CCC */
+void smcpad_ble_disconnect(void);
+
 /* system */
 void smcpad_enter_bootloader(void);         /* DFU mode of fw/boot; does not return */
 void smcpad_reset(void);                    /* does not return */

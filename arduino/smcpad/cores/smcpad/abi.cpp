@@ -42,3 +42,15 @@ extern "C" void *realloc(void *p, size_t size)
     }
     return q;
 }
+
+/* Nor calloc. */
+extern "C" void *calloc(size_t n, size_t size)
+{
+    size_t total = n * size;
+    void *p = (size && total / size != n) ? 0 : malloc(total);
+
+    if (p) {
+        __builtin_memset(p, 0, total);
+    }
+    return p;
+}

@@ -299,6 +299,7 @@ c_SRC_FILES := \
 	../../../../apps/smcpad/examples/smcpad_test/smcpad_pads.c \
 	../../../../apps/smcpad/arduino/smcpad_rt.c \
 	../../../../apps/smcpad/arduino/smcpad_hw.c \
+	../../../../apps/smcpad/arduino/smcpad_ble.c \
 	../../../../apps/smcpad/arduino/smcpad_arduino.c \
 	../../../../apps/smcpad/examples/keyboard/app_keyboard.c \
 	../../../../apps/smcpad/examples/keyfob/app_keyfob.c \
