@@ -33,7 +33,7 @@ extern void clr_wdt(void);
 
 #define NPADS           16
 #define LED_BYTES       548             /* as the stock firmware sends it */
-#define LED_SPI_HZ      6000000
+#define LED_SPI_HZ      6000000         /* SPI clock = clk / (2 * (BAUD + 1)) */
 
 static const u8 stock_adc_to_pad[NPADS] = { 2, 0, 1, 3, 15, 14, 12, 13, 6, 4, 5, 7, 8, 9, 11, 10 };
 static const u8 stock_pad_to_led[NPADS] = { 11, 4, 2, 7, 10, 14, 6, 9, 0, 5, 15, 1, 13, 12, 8, 3 };
@@ -53,7 +53,7 @@ static void led_init(void)
     gpio_direction_output(IO_PORTB_01, 0);
     JL_IOMAP->CON1 &= ~BIT(4);                          /* SPI1 on port A: DO = PB1 */
     SPI1_CON = 0x4021;                                  /* as the stock firmware */
-    SPI1_BAUD = clk / LED_SPI_HZ ? clk / LED_SPI_HZ - 1 : 0;
+    SPI1_BAUD = clk / (2 * LED_SPI_HZ) ? clk / (2 * LED_SPI_HZ) - 1 : 0;
     led_ready = 1;
     smcpad_dbg_kv("rgb: spi clock", clk);
     smcpad_dbg_kv("rgb: baud", SPI1_BAUD);
@@ -67,7 +67,7 @@ static void led_show(void)
     {
         u32 clk = clk_get("spi");               /* BLE start (Y) changes the clocks */
 
-        SPI1_BAUD = clk / LED_SPI_HZ ? clk / LED_SPI_HZ - 1 : 0;
+        SPI1_BAUD = clk / (2 * LED_SPI_HZ) ? clk / (2 * LED_SPI_HZ) - 1 : 0;
     }
     memset(led_buf, 0, sizeof(led_buf));
     for (u32 i = 0; i < NPADS; i++) {

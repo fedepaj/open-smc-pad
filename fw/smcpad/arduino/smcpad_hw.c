@@ -344,10 +344,14 @@ void smcpad_rgb_set(int pad, uint32_t color)
 
 void smcpad_rgb_show(void)
 {
+    static u8 sending;
     u32 clk = clk_get("spi");
 
-    for (u32 n = 0; (SPI1_CON & BIT(15)) == 0 && SPI1_CNT && n < 100000; n++) {
-    }                                       /* the previous frame still going out */
+    /* the previous frame still going out (~0.75 ms): until its pending bit; SPI1_CNT does not
+     * read back the bytes left */
+    for (u32 n = 0; sending && (SPI1_CON & BIT(15)) == 0 && n < 1000000; n++) {
+    }
+    sending = 1;
     memset(rgb_buf, 0, sizeof(rgb_buf));
     for (u32 i = 0; i < SMCPAD_NUM_PADS; i++) {
         u32 c = rgb[i];
@@ -358,8 +362,8 @@ void smcpad_rgb_show(void)
             *p++ = (grb >> b) & 1 ? 0xFC : 0xC0;
         }
     }
-    SPI1_BAUD = clk / 6000000 ? clk / 6000000 - 1 : 0;
-    SPI1_CON |= BIT(14);
+    SPI1_BAUD = clk / 12000000 ? clk / 12000000 - 1 : 0;     /* SPI clock = clk / (2 * (BAUD + 1)) */
+    SPI1_CON |= BIT(14);                    /* clear pending */
     SPI1_ADR = (u32)rgb_buf;
     SPI1_CNT = LED_BYTES;                   /* DMA: returns at once */
 }

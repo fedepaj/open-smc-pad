@@ -149,7 +149,7 @@ half of them.
 ## Pad RGB LEDs — mapped 2026-10-20
 
 - WS2812-style chain on **PB1**, driven by **SPI1** (port A, DO = PB1; `IOMAP CON1` bit 4 = 0),
-  `CON = 0x4021`, DMA (`ADR`, `CNT`), ~6 MHz (`BAUD = clk_get("spi") / 6 MHz - 1`; 24 MHz → 3).
+  `CON = 0x4021`, DMA (`ADR`, `CNT`), 6 MHz: the SPI clock is `clk / (2 × (BAUD + 1))`, so `BAUD = clk_get("spi") / 12 MHz - 1` (24 MHz → 1). With BAUD 3 (3 MHz) a 0 bit stays high 667 ns and reads as 1: every pad shows white on top of its colour (seen 2026-10-20; found by sweeping BAUD).
 - One SPI byte per LED bit, MSB first: **`0xFC` = 1, `0xC0` = 0**; colour word **G<<16 | R<<8 | B**;
   frame = 2 zero bytes, 16 × 24 bytes, zeros up to 548 bytes (the reset gap), as the stock
   firmware sends it (`1e10500`).
