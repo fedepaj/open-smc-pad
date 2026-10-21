@@ -27,9 +27,19 @@ if /i not "%GOT%"=="%SHA%" (
     del "%SETUP%"
     exit /b 1
 )
-"%HERE%innoextract.exe" -s -I "C$/JL/pi32" -d "%HERE%x" "%SETUP%"
+rem only the compiler: pi32\ (the installer puts it in C:\JL; innoextract names the drive folder
+rem its own way, so look for the pi32 that holds bin\clang.exe)
+"%HERE%innoextract.exe" -q -I pi32 -d "%HERE%x" "%SETUP%"
 if errorlevel 1 exit /b 1
-move "%HERE%x\C$\JL\pi32" "%HERE%pi32" >nul
+set "PI32="
+for /f "delims=" %%d in ('dir /s /b /ad "%HERE%x\pi32" 2^>nul') do (
+    if not defined PI32 if exist "%%d\bin\clang.exe" set "PI32=%%d"
+)
+if not defined PI32 (
+    echo SMC-PAD: no pi32\bin\clang.exe in the installer
+    exit /b 1
+)
+move "%PI32%" "%HERE%pi32" >nul
 rmdir /s /q "%HERE%x"
 del "%SETUP%"
 echo SMC-PAD: JieLi compiler ready.
