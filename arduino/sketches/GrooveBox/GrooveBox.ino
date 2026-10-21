@@ -11,9 +11,13 @@
 //   PATTERN SHIFT + KNOB BANK  pads = patterns: tap = next, hold one + tap others = chain,
 //                              SHIFT + pad = copy the current pattern there
 // Everywhere: PLAY start / stop, STOP stop, REC record, SHIFT + REC (1 s) clear the track,
-// KNOB BANK knob page (A: track, B: CCs 70-77), SHIFT + knobs 1-3: tempo, swing, pattern
-// length, SHIFT + NOTE REPEAT: note repeat settings (as stock: rate, swing, latch, sync,
-// tap tempo), NOTE REPEAT outside PLAY = fill, BT long press = Bluetooth.
+// SHIFT + STOP (1 s) the kit back to notes 36-51 on channel 10,
+// KNOB BANK knob page (A: velocity, gate, length, speed, -, -, euclid hits, euclid rotation;
+// B: CCs 70-77), SHIFT + knobs 1-5: tempo, swing, pattern length, track note, track channel,
+// SHIFT + NOTE REPEAT: note repeat settings (as stock: rate, swing, latch, sync, tap tempo),
+// NOTE REPEAT outside PLAY = fill, BT long press = Bluetooth.
+// With Live's SMC_PAD control surface (ableton/SMC_PAD) the pads take the Drum Rack's colours
+// and empty drum pads stay dark.
 #include <SMCPad.h>
 #include "Settings.h"
 #include "Midi.h"
@@ -36,7 +40,7 @@ static uint8_t sentChannel[16];
 static uint8_t heldVelocity[16];
 static uint32_t flashUntil[16];
 static bool needShow = true;
-static uint32_t btDownAt, recDownAt;
+static uint32_t btDownAt, recDownAt, stopDownAt;
 
 // STEP mode: steps held for editing
 static bool stepHeld[16];
@@ -65,6 +69,56 @@ static void showValue(int value, int max, uint32_t color) {
 static void onTrackHit(int t) {
   flashUntil[t] = millis() + 60;
   needShow = true;
+}
+
+// ---------------------------------------------------------------- Ableton (ableton/SMC_PAD)
+// The control surface script sends the Drum Rack's picture: per note, whether a drum pad holds
+// something and its colour. While it is there, tracks take those colours and empty ones go dark.
+static bool abletonActive;
+static uint32_t abletonColor[128];               // 0: empty drum pad
+
+static uint32_t colorOf(int t) {
+  if (!abletonActive) return trackColor[t];
+  return abletonColor[pattern.track[t].note & 0x7F];
+}
+
+static uint8_t sysex[600];
+static int sysexLength = -1;                      // -1: not in a SysEx
+
+static void sysexDone() {
+  // F0 7D 53 50 cmd ...
+  if (sysexLength < 6 || sysex[1] != 0x7D || sysex[2] != 0x53 || sysex[3] != 0x50) return;
+  if (sysex[4] == 0x01 && sysexLength >= 6 + 128 * 4) {
+    for (int n = 0; n < 128; n++) {
+      const uint8_t *d = sysex + 5 + n * 4;
+      uint32_t c = (uint32_t)d[1] << 17 | (uint32_t)d[2] << 9 | (uint32_t)d[3] << 1;
+      abletonColor[n] = d[0] ? (c ? c : 0x404040) : 0;   // present but black: grey
+    }
+    abletonActive = true;
+  } else if (sysex[4] == 0x02) {
+    abletonActive = false;
+  }
+  needShow = true;
+}
+
+// USB-MIDI SysEx packets: CIN 4 = 3 bytes going on, 5 / 6 / 7 = the last 1 / 2 / 3
+static void sysexPacket(const midiEventPacket_t &p) {
+  uint8_t cin = p.header & 0x0F, b[3] = {p.byte1, p.byte2, p.byte3};
+  int n = cin == 0x4 || cin == 0x7 ? 3 : cin == 0x6 ? 2 : 1;
+  for (int i = 0; i < n; i++) {
+    if (b[i] == 0xF0) sysexLength = 0;
+    if (sysexLength < 0) continue;
+    if (sysexLength < (int)sizeof(sysex)) sysex[sysexLength++] = b[i];
+    if (b[i] == 0xF7) {
+      sysexDone();
+      sysexLength = -1;
+    }
+  }
+}
+
+// STEP mode: steps in reading order, step 1 top-left (pads count from bottom-left)
+static int padToStep(int pad) {
+  return stepPage * 16 + (3 - pad / 4) * 4 + pad % 4;
 }
 
 // ---------------------------------------------------------------- velocity, pressure
@@ -255,37 +309,38 @@ static uint32_t padLed(int pad) {
       if (shift) return shiftPlayLed(pad);
       Track &k = pattern.track[pad];
       bool bright = held[pad] || now < flashUntil[pad] || (latched[pad] && nrActive());
-      uint32_t c = trackColor[pad];
-      if (bright) return scale(c, 1, 2);
-      return pad == selectedTrack ? scale(c, 1, 6) : scale(c, 1, k.muted ? 40 : 16);
+      uint32_t c = colorOf(pad);
+      if (bright) return c;
+      return pad == selectedTrack ? scale(c, 1, 2) : scale(c, 1, k.muted ? 20 : 5);
     }
     case MODE_STEP: {
-      if (shift) return pad == selectedTrack ? scale(trackColor[pad], 1, 2) : scale(trackColor[pad], 1, 24);
+      if (shift) return pad == selectedTrack ? scale(colorOf(pad), 1, 1) : scale(colorOf(pad), 1, 8);
       Track &k = pattern.track[selectedTrack];
-      int s = stepPage * 16 + pad;
+      int s = padToStep(pad);
       if (s >= k.length) return 0;
-      if (playing && playheadStep(selectedTrack) == s) return 0x707070;
+      if (playing && playheadStep(selectedTrack) == s) return 0xC0C0C0;
       Step &st = pattern.step[selectedTrack][s];
-      uint32_t c = trackColor[selectedTrack];
-      if (stepHeld[pad]) return scale(c, 2, 3);
-      if (!(st.flags & STEP_ON)) return s % 4 == 0 ? 0x030303 : 0;
-      uint32_t on = scale(c, 1, 5);
+      uint32_t c = colorOf(selectedTrack);
+      if (!c) c = 0x606060;                         // an empty drum pad: still see the steps
+      if (stepHeld[pad]) return c;
+      if (!(st.flags & STEP_ON)) return s % 4 == 0 ? 0x0A0A0A : 0x020202;
+      uint32_t on = scale(c, 2, 3);
       if (stepHasLocks(st)) on = mix(on, 0x303030);
       if (st.cond != COND_ALWAYS && (now / 300) % 2) on = scale(on, 1, 3);
       return on;
     }
     case MODE_MUTE: {
-      if (shift) return pad == selectedTrack ? scale(trackColor[pad], 1, 2) : scale(trackColor[pad], 1, 24);
-      uint32_t c = trackColor[pad];
-      if (now < flashUntil[pad] && !pattern.track[pad].muted) return scale(c, 1, 2);
-      return pattern.track[pad].muted ? scale(c, 1, 60) : scale(c, 1, 6);
+      if (shift) return pad == selectedTrack ? scale(colorOf(pad), 1, 1) : scale(colorOf(pad), 1, 8);
+      uint32_t c = colorOf(pad);
+      if (now < flashUntil[pad] && !pattern.track[pad].muted) return c;
+      return pattern.track[pad].muted ? scale(c, 1, 30) : scale(c, 1, 3);
     }
     case MODE_PATTERN: {
       if (pad == currentSlot) return 0x00A040;
       if (pad == queuedSlot) return (now / 200) % 2 ? 0x00A040 : 0x001008;
       for (int i = 0; i < chainLength; i++) if (chain[i] == pad && chainLength > 1) return 0x003010;
       if (held[pad]) return 0x404040;
-      return storeHas(pad) ? 0x000820 : 0x010101;
+      return storeHas(pad) ? 0x002060 : 0x040404;
     }
   }
   return 0;
@@ -377,7 +432,7 @@ static void onPadPress(int pad, int velocity) {
       return;
     case MODE_STEP: {
       if (shift) { selectedTrack = pad; return; }
-      int s = stepPage * 16 + pad;
+      int s = padToStep(pad);
       if (s >= pattern.track[selectedTrack].length) return;
       Step &st = pattern.step[selectedTrack][s];
       stepHeld[pad] = true;
@@ -423,7 +478,7 @@ static void onPadRelease(int pad) {
     case MODE_STEP: {
       if (!stepHeld[pad]) return;
       stepHeld[pad] = false;
-      int s = stepPage * 16 + pad;
+      int s = padToStep(pad);
       if (stepWasOn[pad] && !stepEdited[pad]) {        // a tap on a lit step: off
         pattern.step[selectedTrack][s].flags &= ~STEP_ON;
         patternDirty = true;
@@ -490,6 +545,7 @@ static void onButtonPress(int b) {
       if (playing) transportStop(); else transportStart();
       break;
     case B_STOP:
+      if (shift) { stopDownAt = millis() | 1; break; }
       if (!playing) allPadNotesOff();
       transportStop();
       break;
@@ -515,6 +571,7 @@ static void onButtonRelease(int b) {
   switch (b) {
     case B_BT: btDownAt = 0; break;
     case B_REC: recDownAt = 0; break;
+    case B_STOP: stopDownAt = 0; break;
     case B_REPEAT:
       fillHeld = false;
       if (mode == MODE_PLAY && !settings.latch) for (int p = 0; p < 16; p++) if (!held[p]) padNoteOff(p);
@@ -541,7 +598,7 @@ static void editHeldSteps(int knob, int delta) {
   for (int pad = 0; pad < 16; pad++) {
     if (!stepHeld[pad]) continue;
     stepEdited[pad] = true;
-    Step &st = pattern.step[selectedTrack][stepPage * 16 + pad];
+    Step &st = pattern.step[selectedTrack][padToStep(pad)];
     switch (knob) {
       case 0: st.velocity = constrain(st.velocity + steps * 2, 1, 127); showValue(st.velocity, 127, 0xA06000); break;
       case 1: st.micro = constrain(st.micro + steps, -11, 11); showValue(st.micro + 11, 22, 0x00A0A0); break;
@@ -570,16 +627,16 @@ static void editHeldSteps(int knob, int delta) {
 
 static void editTrack(int knob, int delta) {
   Track &k = pattern.track[selectedTrack];
-  uint32_t c = trackColor[selectedTrack];
-  int steps = knobSteps(knob, delta, knob <= 2 ? 1 : 2);
+  uint32_t c = colorOf(selectedTrack);
+  if (!c) c = 0x606060;
+  int steps = knobSteps(knob, delta, knob <= 1 ? 1 : 2);
   if (!steps) return;
   switch (knob) {
-    case 0: k.note = constrain(k.note + steps, 0, 127); showValue(k.note % 12, 11, c); break;
-    case 1: k.velocity = constrain(k.velocity + steps * 2, 1, 127); showValue(k.velocity, 127, c); break;
-    case 2: k.gate = constrain(k.gate + steps * 5, 5, 100); showValue(k.gate, 100, c); break;
-    case 3: k.length = constrain(k.length + steps, 1, MAX_STEPS); showValue(k.length, MAX_STEPS, c); break;
-    case 4: k.speed = constrain(k.speed + steps, SPEED_HALF, SPEED_DOUBLE); showValue(k.speed, 2, c); break;
-    case 5: k.channel = constrain(k.channel + steps, 0, 15); showValue(k.channel, 15, c); break;
+    case 0: k.velocity = constrain(k.velocity + steps * 2, 1, 127); showValue(k.velocity, 127, c); break;
+    case 1: k.gate = constrain(k.gate + steps * 5, 5, 100); showValue(k.gate, 100, c); break;
+    case 2: k.length = constrain(k.length + steps, 1, MAX_STEPS); showValue(k.length, MAX_STEPS, c); break;
+    case 3: k.speed = constrain(k.speed + steps, SPEED_HALF, SPEED_DOUBLE); showValue(k.speed, 2, c); break;
+    case 4: case 5: return;                       // free for now
     case 6:
       euclidHits[selectedTrack] = constrain(euclidHits[selectedTrack] + steps, 0, k.length);
       euclid(selectedTrack, euclidHits[selectedTrack], euclidRotate[selectedTrack]);
@@ -616,9 +673,12 @@ static void knobPageBTurn(int knob, int delta) {
 
 static void onKnob(int knob, int delta) {
   needShow = true;
-  if (SMCPad.button(B_SHIFT) && knob < 3) {           // global
-    int steps = knobSteps(knob, delta, knob == 0 ? 1 : 2);
+  if (SMCPad.button(B_SHIFT) && knob < 5) {           // setup: global, and the track's voice
+    int steps = knobSteps(knob, delta, knob == 0 || knob == 3 ? 1 : 2);
     if (!steps) return;
+    Track &k = pattern.track[selectedTrack];
+    if (knob == 3) { k.note = constrain(k.note + steps, 0, 127); showValue(k.note % 12, 11, colorOf(selectedTrack) ? colorOf(selectedTrack) : 0x606060); patternDirty = true; }
+    if (knob == 4) { k.channel = constrain(k.channel + steps, 0, 15); showValue(k.channel, 15, 0x00A0A0); patternDirty = true; }
     if (knob == 0) { bpm = settings.bpm = constrain(settings.bpm + steps, 30, 300); showValue(bpm - 30, 270, 0xA0A0A0); settingsChanged(); }
     if (knob == 1) { pattern.swing = constrain(pattern.swing + steps, 0, 4); showValue(pattern.swing, 4, 0xA000A0); patternDirty = true; }
     if (knob == 2) { pattern.length = constrain(pattern.length + steps * 16, 16, 64); showValue(pattern.length / 16 - 1, 3, 0x00A040); patternDirty = true; }
@@ -649,6 +709,11 @@ static void midiIn() {
   for (int i = 0; i < 32; i++) {
     midiEventPacket_t p = midiRead();
     if (p.header == 0) return;
+    uint8_t cin = p.header & 0x0F;
+    if (cin >= 0x4 && cin <= 0x7 && (cin != 0x5 || sysexLength >= 0 || p.byte1 == 0xF7)) {
+      sysexPacket(p);
+      continue;
+    }
     switch (p.byte1) {
       case 0xF8: engineClockIn(); if (!playing && syncExternal) noteRepeatClock(); break;
       case 0xFA: engineStartIn(true); break;
@@ -694,6 +759,15 @@ void loop() {
     trackClearSteps(pattern, selectedTrack);
     patternDirty = true;
     showValue(0, 127, trackColor[selectedTrack]);
+  }
+  if (stopDownAt && now - stopDownAt > 1000) {         // SHIFT + STOP held: the kit back to 36-51
+    stopDownAt = 0;
+    for (int t = 0; t < TRACKS; t++) {
+      pattern.track[t].note = 36 + t;
+      pattern.track[t].channel = 9;
+    }
+    patternDirty = true;
+    showValue(15, 15, 0xA0A0A0);
   }
   // stopped and idle: save the edits (not while playing: a flash erase stalls the clock)
   if (patternDirty) {
