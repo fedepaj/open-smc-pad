@@ -21,3 +21,14 @@ static midiEventPacket_t midiRead() {
   if (p.header == 0 && bleStarted) p = BLEMIDI.read();
   return p;
 }
+
+// a SysEx (F0 ... F7) to USB only, packed in USB-MIDI packets (CIN 4 = 3 bytes going on,
+// 5 / 6 / 7 = the last 1 / 2 / 3)
+static void sysexSend(const uint8_t *msg, int len) {
+  for (int i = 0; i < len; i += 3) {
+    int n = len - i < 3 ? len - i : 3;
+    uint8_t cin = len - i > 3 ? 0x4 : 0x4 + n;
+    MidiUSB.sendMIDI({cin, msg[i], (uint8_t)(n > 1 ? msg[i + 1] : 0), (uint8_t)(n > 2 ? msg[i + 2] : 0)});
+  }
+  MidiUSB.flush();
+}

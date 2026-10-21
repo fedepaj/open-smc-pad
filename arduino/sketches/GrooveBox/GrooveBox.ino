@@ -101,6 +101,17 @@ static void sysexDone() {
   needShow = true;
 }
 
+// to Live's script: hello (send the picture), transport (when the pad follows Live's clock)
+static void abletonHello() {
+  static const uint8_t hello[] = {0xF0, 0x7D, 0x53, 0x50, 0x10, 0xF7};
+  sysexSend(hello, sizeof(hello));
+}
+
+static void abletonTransport(bool play) {
+  uint8_t msg[] = {0xF0, 0x7D, 0x53, 0x50, 0x20, (uint8_t)play, 0xF7};
+  sysexSend(msg, sizeof(msg));
+}
+
 // USB-MIDI SysEx packets: CIN 4 = 3 bytes going on, 5 / 6 / 7 = the last 1 / 2 / 3
 static void sysexPacket(const midiEventPacket_t &p) {
   uint8_t cin = p.header & 0x0F, b[3] = {p.byte1, p.byte2, p.byte3};
@@ -541,11 +552,13 @@ static void onButtonPress(int b) {
       break;
     }
     case B_PLAY:
+      if (syncExternal && abletonActive) { abletonTransport(!playing); break; }   // Live leads
       if (extAlive()) break;                           // the external clock is in charge
       if (playing) transportStop(); else transportStart();
       break;
     case B_STOP:
       if (shift) { stopDownAt = millis() | 1; break; }
+      if (syncExternal && abletonActive) { abletonTransport(false); break; }
       if (!playing) allPadNotesOff();
       transportStop();
       break;
@@ -742,6 +755,11 @@ void setup() {
 
 void loop() {
   static uint32_t dirtySince;
+  static bool usbWasUp;
+  if (smcpad_usb_power() != usbWasUp) {               // (re)connected: ask Live for the picture
+    usbWasUp = !usbWasUp;
+    if (usbWasUp) abletonHello();
+  }
   SMCPad.update();
   midiIn();
   engineRun();

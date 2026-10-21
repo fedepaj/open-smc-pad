@@ -25,7 +25,7 @@
 #define CFG_TUD_MSC                 0
 #define CFG_TUD_HID                 0
 #define CFG_TUD_MIDI                1
-#define CFG_TUD_MIDI_RX_BUFSIZE     256
+#define CFG_TUD_MIDI_RX_BUFSIZE     1024        /* a whole Drum Rack picture (518 B of SysEx) */
 #define CFG_TUD_MIDI_TX_BUFSIZE     256
 #define CFG_TUD_MIDI_EP_BUFSIZE     64
 #define CFG_TUD_VENDOR              0
