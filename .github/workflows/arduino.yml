@@ -1,0 +1,134 @@
+# The Arduino platform for the Boards Manager.
+#
+#   every push / PR: build the precompiled core (JieLi SDK, in Docker), the platform archive and
+#                    smcpad-tools for Linux and macOS; install them with arduino-cli from a local
+#                    index and compile every example, SMCPadStock and the core's self-test
+#   tag v1.2.3:      the same, then a GitHub release with package_smcpad_index.json, so
+#                    https://github.com/fedepaj/open-smc-pad/releases/latest/download/package_smcpad_index.json
+#                    is the URL to give the Arduino IDE
+#   weekly:          is JieLi's toolchain download still there, unchanged? (the index points at it:
+#                    it is theirs, we may not redistribute it)
+name: Arduino platform
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
+
+env:
+  TOOLCHAIN_URL: https://jl-update.oss-cn-shenzhen.aliyuncs.com/jieli-linux-toolchains-20260730.1.tar.xz
+  TOOLCHAIN_SHA256: a1545cddbc451a06bac43eb5cd96d831470c42a97c5c0b1f98879a20fc7647bd
+  POSTBUILD_URL: https://jl-update.oss-cn-shenzhen.aliyuncs.com/jieli-linux-post-build-tools-20260923.1.tar.xz
+  POSTBUILD_SHA256: 6949d48c4cd82e274d7943d4ca67f214593fdb4f699ef9f51c2ecc78125ab739
+
+jobs:
+  version:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - id: v
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then v="${GITHUB_REF#refs/tags/v}"; else v="0.0.0-dev.${GITHUB_RUN_NUMBER}"; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  core:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Submodules the build needs
+        run: git submodule update --init sdk/fw-AC63_BT_SDK third_party/tinyusb third_party/ArduinoCore-API
+      - name: JieLi toolchain and post-build tools (from JieLi, checked)
+        run: |
+          mkdir -p tools/jl-toolchain tools/jl-postbuild
+          curl -sfL -o tc.tar.xz "$TOOLCHAIN_URL" && echo "$TOOLCHAIN_SHA256  tc.tar.xz" | sha256sum -c
+          curl -sfL -o pb.tar.xz "$POSTBUILD_URL" && echo "$POSTBUILD_SHA256  pb.tar.xz" | sha256sum -c
+          tar -xJf tc.tar.xz -C tools/jl-toolchain && tar -xJf pb.tar.xz -C tools/jl-postbuild
+      - name: Precompiled core
+        run: SMCPAD_ARDUINO=1 SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh
+      - name: Platform archive
+        run: arduino/release/build_platform.sh "${{ needs.version.outputs.version }}" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform
+          path: dist/
+
+  host-tools:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14, macos-13]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: GNU make for blink (macOS)
+        if: runner.os == 'macOS'
+        run: brew install make
+      - run: arduino/release/build_host_tools.sh "${{ needs.version.outputs.version }}" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tools-${{ matrix.os }}
+          path: dist/
+
+  test:
+    needs: [version, core, host-tools]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install the platform from a local index, as the Boards Manager would
+        run: |
+          python3 arduino/release/make_index.py "${{ needs.version.outputs.version }}" dist http://127.0.0.1:8000 > dist/package_smcpad_index.json
+          (cd dist && python3 -m http.server 8000 >/dev/null 2>&1 &)
+          sleep 1
+          URL=http://127.0.0.1:8000/package_smcpad_index.json
+          arduino-cli core update-index --additional-urls "$URL"
+          arduino-cli core install smcpad:br25 --additional-urls "$URL"
+      - name: Compile the examples, SMCPadStock and the self-test
+        run: |
+          set -e
+          P="$HOME/.arduino15/packages/smcpad/hardware/br25/${{ needs.version.outputs.version }}"
+          for s in "$P"/libraries/*/examples/*/ arduino/sketches/SMCPadStock arduino/tests/CoreTest; do
+            echo "::group::$s"
+            arduino-cli compile --fqbn smcpad:br25:smcpad "$s"
+            echo "::endgroup::"
+          done
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Index and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          python3 arduino/release/make_index.py "$V" dist "https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}" > dist/package_smcpad_index.json
+          gh release create "$GITHUB_REF_NAME" dist/* --title "open-smc-pad $V" --generate-notes
+
+  jieli-download:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: JieLi's toolchain download still there and unchanged
+        run: |
+          curl -sfL -o tc.tar.xz "$TOOLCHAIN_URL" && echo "$TOOLCHAIN_SHA256  tc.tar.xz" | sha256sum -c

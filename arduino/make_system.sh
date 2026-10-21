@@ -7,14 +7,8 @@ S=$ROOT/arduino/smcpad/system
 mkdir -p $S/include
 cp $ROOT/fw/smcpad/out/core/smcpad_core.o $ROOT/fw/smcpad/out/core/sdk.ld $ROOT/fw/smcpad/out/core/libsmcpad_native.a $S/
 cp $ROOT/fw/smcpad/arduino/smcpad_rt.h $S/include/
-# directory template (9 entries, VM/PRCT for our layout) + cfg_tool.bin, from jlimage
-python3 - "$ROOT" "$S/app_template.bin" <<'PY'
-import sys; sys.path.insert(0, sys.argv[1] + "/host")
-import jlimage as J
-t, cfg = J.template_and_cfg()            # the SDK's cfg_tool.bin, no vendor image needed
-area = J.build_app_area(b"\0" * 0x200, cfg, t, entry_vma=0x1E08120, vm=(0x71000, 0x4000), prct_size=0x71000)
-open(sys.argv[2], "wb").write(area[:0x120] + cfg)
-PY
+# directory template (9 entries, VM/PRCT for our layout) + the SDK's cfg_tool.bin
+python3 $ROOT/arduino/release/make_template.py $S/app_template.bin
 # development tools: the packer, blink + its Linux root on macOS, and platform.local.txt pointing
 # the platform at them (a Boards Manager install gets them as packages instead)
 H=$ROOT/arduino/smcpad/tools/host
