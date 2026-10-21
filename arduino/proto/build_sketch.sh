@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Prototype of the Arduino core's build recipe: sketch.cpp + core (C++) + precompiled core -> app area
 set -euo pipefail
-ROOT=/Users/federicopaglioni/Documents/open_smc_pad
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TOOLCHAIN="$(ls -d "$ROOT"/tools/jl-toolchain/jieli-linux-toolchains-*/ | head -1)"
 POSTBUILD="$(ls -d "$ROOT"/tools/jl-postbuild/jieli-linux-post-build-tools-*/ | head -1)"
 P=${SKETCH_DIR:-$ROOT/arduino/proto}

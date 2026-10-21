@@ -64,7 +64,7 @@ qt.qpa.fonts: Populating font family aliases took 77 ms. Replace uses of missing
 [2026-10-18 18:33:09] [ "DEBUG" ] "Probe ports 3/3 returned: no-response"
 [2026-10-18 18:33:09] [ "DEBUG" ] "Not a target device on ports 3/3 (no handshake response)"
 [2026-10-18 18:33:13] [ "INFO" ] "Opening OTA file dialog"
-[2026-10-18 18:33:39] [ "INFO" ] "Selected file: /Users/federicopaglioni/Documents/open_smc_pad/work/fw/SMC-PAD_005_m-upgrade.fwsc"
+[2026-10-18 18:33:39] [ "INFO" ] "Selected file: ~/open_smc_pad/work/fw/SMC-PAD_005_m-upgrade.fwsc"
 [2026-10-18 18:33:39] [ "INFO" ] "Parsed OTA file (20-slot) - Name: SMC-PAD, Version: 5"
 [2026-10-18 18:33:39] [ "INFO" ] "OTA file parsed successfully"
 [2026-10-18 18:34:07] [ "INFO" ] "Starting OTA upgrade process"

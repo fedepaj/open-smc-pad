@@ -24,3 +24,7 @@ re/ghidra/
 # JieLi toolchain and post-build tools: downloaded archives (see README)
 tools/jl-toolchain/
 tools/jl-postbuild/
+
+# Local tool configuration and working captures
+.mcp.json
+*.mmon
