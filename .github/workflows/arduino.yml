@@ -141,6 +141,12 @@ jobs:
           URL=http://127.0.0.1:8000/package_smcpad_index.json
           arduino-cli core update-index --additional-urls "$URL"
           arduino-cli core install smcpad:br25 --additional-urls "$URL"
+      - name: The JieLi compiler, fetched as the first build would
+        run: |
+          T="$LOCALAPPDATA/Arduino15/packages/smcpad/tools/jieli-toolchain/20260730.1"
+          ls -la "$T"
+          SMCPAD_FETCH_DEBUG=1 cmd //d //c "$(cygpath -w "$T")\\jieli_fetch.cmd"
+          ls "$T/pi32/bin" | head
       - name: Compile the examples, SMCPadStock and the self-test
         run: |
           set -e

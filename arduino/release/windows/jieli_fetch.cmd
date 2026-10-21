@@ -1,4 +1,5 @@
 @echo off
+if defined SMCPAD_FETCH_DEBUG echo on
 rem The JieLi compiler for Windows, fetched into this folder the first time a sketch is built
 rem (the Arduino platform runs this before every build; afterwards it returns at once).
 rem It comes from JieLi's own server, checked against the SHA-256 below, and only its pi32
