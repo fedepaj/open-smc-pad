@@ -69,7 +69,7 @@ In the Arduino IDE, *Settings → Additional boards manager URLs*:
 https://github.com/fedepaj/open-smc-pad/releases/latest/download/package_smcpad_index.json
 ```
 
-then install **SMC-PAD (open firmware)** from the Boards Manager (macOS and Linux for now; it
+then install **SMC-PAD (open firmware)** from the Boards Manager (macOS, Linux and Windows; it
 fetches the JieLi compiler from JieLi). More in [arduino/README.md](arduino/README.md#install).
 
 > **Status:** works end to end on the author's pad. The first release will ship the ready-made

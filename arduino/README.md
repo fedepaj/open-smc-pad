@@ -78,12 +78,14 @@ Your pad needs the open firmware's bootloader:
 minutes. Then uploads are like any native-USB Arduino: the IDE resets the pad into the bootloader
 (1200-baud touch) and sends the sketch with `dfu-util`.
 
-**Arduino IDE (Boards Manager)** — macOS or Linux x86-64:
+**Arduino IDE (Boards Manager)** — macOS (Apple silicon or Intel), Linux x86-64, Windows:
 
 1. *Settings → Additional boards manager URLs*:
    `https://github.com/fedepaj/open-smc-pad/releases/latest/download/package_smcpad_index.json`
 2. *Boards Manager*: install **SMC-PAD (open firmware)**. It brings the JieLi compiler (downloaded
-   from JieLi), our tools and dfu-util. On Apple silicon dfu-util runs under Rosetta.
+   from JieLi), our tools and dfu-util. On Apple silicon dfu-util runs under Rosetta. On Windows
+   the first build fetches JieLi's compiler (52 MB) and unpacks it inside the Arduino tools
+   folder: nothing is installed in the system, no CodeBlocks needed.
 3. Board **M-Vave SMC-PAD (open firmware)**, the pad's serial port, Upload.
 
 With arduino-cli: `arduino-cli core install smcpad:br25 --additional-urls <the URL above>`.

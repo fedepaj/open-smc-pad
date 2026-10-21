@@ -8,10 +8,13 @@ other documents and in git.
 - **Release packages:** the install bundle (installer, bootloader area, a first firmware) for
   `install_from_stock.py --from <dir>` without a source build; the precompiled core for the
   Arduino platform; GrooveBox and SMCPadStock binaries.
-- **Boards Manager:** the pipeline is in place (`.github/workflows/arduino.yml`, `arduino/release/`)
-  and checked locally end to end; the first `v*` tag publishes it. Windows is not supported yet.
-  The JieLi toolchain is downloaded from JieLi's server (no license file: we may not host it); a
-  weekly job checks that download.
+- **Boards Manager:** in place for macOS, Linux and Windows (`.github/workflows/arduino.yml`,
+  `arduino/release/`), released as v0.1.0 for macOS and Linux. The JieLi toolchain comes from JieLi's
+  server (no license file: we may not host it; a weekly job checks the download); on Windows our
+  `jieli_fetch.cmd` extracts it from JieLi's installer at the first build.
+- **Windows uploads:** dfu-util needs the WinUSB driver for the bootloader (`1209:0002`). Until the
+  bootloader carries Microsoft OS 2.0 descriptors (Windows then binds WinUSB by itself), it takes
+  Zadig once. Not tried on a Windows machine with the pad yet.
 
 ## Firmware
 
@@ -25,8 +28,6 @@ other documents and in git.
   host enumerated us"; the charge state itself is unknown.
 - Optional **USB HID** (keyboard / mouse) per sketch: not done. Any change to the USB descriptors
   makes macOS on Apple silicon ask the user to allow the accessory again.
-- **Windows hosts:** dfu-util needs WinUSB for the bootloader; the JieLi toolchain has Windows
-  builds, the Arduino recipe does not use them yet.
 
 ## Bootloader
 
