@@ -79,7 +79,7 @@ struct boot_diag {
  * unconfigured until the user approves it -- bcdDevice 0x0104 kept the updated bootloader
  * invisible to dfu-util. The descriptors stay the same forever (bcdDevice 0x0100); the
  * version is read through DFU alt 2: dfu-util -a 2 -U <file>. */
-#define BOOT_VERSION        0x0107
+#define BOOT_VERSION        0x0108
 
 /* Installer slot + staging area (fw/boot/install.c), used to install the bootloader from the
  * stock firmware and to update it from the bootloader itself (DFU alt 2). The uboot maps a

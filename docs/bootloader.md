@@ -59,6 +59,16 @@ for a new accessory and leaves it `!registered` until the user approves it (or u
 Mac) -- bcdDevice 0x0104 and 0x0105 made the updated bootloader invisible to dfu-util, the same
 code as 0x0103 was fine. Same rule for the application and the Arduino core.
 
+The one deliberate exception is 0x0108, for Windows: dfu-util talks to the device through libusb,
+which on Windows needs the WinUSB driver bound to it, and Windows binds nothing to a DFU-mode
+device by itself (hence Zadig, for most DFU boards). 0x0108 announces USB 2.1 (bcdUSB 0x0210)
+and a BOS descriptor with the Microsoft OS 2.0 platform capability (vendor code 1); Windows then
+asks for the descriptor set (vendor request 1, wIndex 7) and gets: compatible ID `WINUSB`, and
+`DeviceInterfaceGUIDs` = `{7d279a71-4e27-4bcb-9ca9-6a8c93b56630}`. WinUSB binds at the first
+plug-in, no driver install, no Zadig (fw/boot/usb_desc.c). macOS asks to allow the "new"
+accessory once after the update to 0x0108; nothing else changes. The application (CDC + MIDI)
+needs nothing: Windows has class drivers for both.
+
 ## Hardening: a broken application must not lock the pad out
 
 Besides "no valid directory" and the application's own request (`B`, 1200-baud touch), the

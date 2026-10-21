@@ -86,6 +86,8 @@ minutes. Then uploads are like any native-USB Arduino: the IDE resets the pad in
    from JieLi), our tools and dfu-util. On Apple silicon dfu-util runs under Rosetta. On Windows
    the first build fetches JieLi's compiler (52 MB) and unpacks it inside the Arduino tools
    folder: nothing is installed in the system, no CodeBlocks needed.
+   Uploading from Windows needs bootloader 0x0108 or later (WinUSB binds by itself, no Zadig):
+   a pad installed with an older one gets it with `host/dfu_flash.sh --bootloader`.
 3. Board **M-Vave SMC-PAD (open firmware)**, the pad's serial port, Upload.
 
 With arduino-cli: `arduino-cli core install smcpad:br25 --additional-urls <the URL above>`.
