@@ -24,7 +24,7 @@ tools.jl.cmd.windows="{tools.jl.host}/jl.exe" "{tools.jl.toolchain}" "{tools.jl.
 tools.jl.include.windows={tools.jl.toolchain}/pi32/pi32v2-include
 tools.jl.lib.windows={tools.jl.toolchain}/pi32/pi32v2-lib
 tools.smcpad_pack.cmd.windows="{tools.jl.host}/smcpad_pack.exe"
-recipe.hooks.prebuild.1.pattern.windows=cmd /c "{tools.jl.toolchain}\jieli_fetch.cmd"
+recipe.hooks.prebuild.1.pattern.windows={tools.jl.cmd} fetch
 
 compiler.warning_flags=-w
 compiler.warning_flags.none=-w

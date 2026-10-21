@@ -4,6 +4,9 @@
  *
  *   jl.exe <toolchain dir> <host tools dir> <tool> [args...]
  *   tool: clang, clang++, ld, ar, nm, objcopy, objdump
+ *   jl.exe <toolchain dir> <host tools dir> fetch     runs <toolchain dir>\jieli_fetch.cmd (the
+ *                                                     platform's pre-build hook: the path is built
+ *                                                     here, out of reach of quoting rules)
  *
  * Built with mingw-w64 (arduino/release/build_windows_tools.sh).
  */
@@ -74,6 +77,25 @@ int main(int argc, char **argv)
     if (argc < 4) {
         fprintf(stderr, "usage: jl.exe <toolchain dir> <host tools dir> <tool> [args...]\n");
         return 2;
+    }
+    if (!strcmp(argv[3], "fetch")) {
+        char script[MAX_PATH * 2], line[MAX_PATH * 3];
+
+        snprintf(script, sizeof(script), "%s\\jieli_fetch.cmd", argv[1]);
+        for (char *c = script; *c; c++) if (*c == '/') *c = '\\';
+        /* cmd /s /c "<line>": /s strips exactly the outer quotes, whatever is inside */
+        snprintf(line, sizeof(line), "cmd.exe /d /s /c \"\"%s\"\"", script);
+        memset(&si, 0, sizeof(si));
+        si.cb = sizeof(si);
+        if (!CreateProcessA(NULL, line, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+            fprintf(stderr, "jl.exe: cannot run %s (error %lu)\n", script, GetLastError());
+            return 1;
+        }
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        GetExitCodeProcess(pi.hProcess, &code);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        return (int)code;
     }
     for (size_t i = 0; i < sizeof(map) / sizeof(map[0]); i++) {
         if (!strcmp(argv[3], map[i].tool)) {
