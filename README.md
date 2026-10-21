@@ -61,6 +61,17 @@ something does not check out, the stock firmware simply boots again.
 Afterwards any firmware goes on over USB: from the Arduino IDE, or `dfu-util -d 1209:0002 -a 0 -D
 firmware.bin` with the pad in its bootloader (hold **SHIFT + PLAY** while switching it on).
 
+### The Arduino core
+
+In the Arduino IDE, *Settings → Additional boards manager URLs*:
+
+```
+https://github.com/fedepaj/open-smc-pad/releases/latest/download/package_smcpad_index.json
+```
+
+then install **SMC-PAD (open firmware)** from the Boards Manager (macOS and Linux for now; it
+fetches the JieLi compiler from JieLi). More in [arduino/README.md](arduino/README.md#install).
+
 > **Status:** works end to end on the author's pad. The first release will ship the ready-made
 > install package (until then `install_from_stock.py` needs the files from a source build, see
 > [fw/README.md](fw/README.md#building)). To go back to the
