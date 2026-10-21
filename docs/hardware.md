@@ -188,3 +188,10 @@ use the 595/4051 side as the known end.
 - **USB 5 V is not visible to the chip**: `AD_CH_LDO5V` reads 0 and the SDK charge module is off
   (`TCFG_CHARGE_ENABLE` disabled): a separate charger does the battery (red / green LED in
   hardware). `smcpad_usb_power()` = a USB host enumerated us.
+
+## Pad velocity calibration, case closed (2026-10-21)
+
+105 hits over the 16 pads (`/tmp/PadCalib`: raw peak per hit): soft 215-770, hard 925-966,
+very hard 976-988 (saturation ~990). All pads alike within that spread. The runtime maps the
+peak linearly from the 150 threshold to **960 = velocity 127** (was 1023: 127 was never
+reached and hard hits sat at ~115). Sketches use the same 150-960 range for pressure.

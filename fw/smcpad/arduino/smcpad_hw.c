@@ -243,6 +243,9 @@ uint32_t smcpad_matrix_raw(void)
 #define PAD_ON          150                 /* the stock firmware's threshold */
 #define PAD_OFF         80
 #define ATTACK_ROUNDS   3                   /* rounds the peak is looked for after the threshold */
+/* velocity 127 from here up: with the case closed (silicone + graphite) hard hits peak at
+ * 925-966 and the sensor saturates at ~990; soft ones land at 215-770 (measured 2026-10-21) */
+#define PAD_FULL        960
 
 enum { PAD_IDLE, PAD_ATTACK, PAD_HELD };
 
@@ -287,7 +290,7 @@ static void pad_sample(u32 pad, u32 v)
             pad_peak[pad] = (u16)v;
         }
         if (++pad_rounds[pad] >= ATTACK_ROUNDS) {
-            u32 vel = (pad_peak[pad] - PAD_ON) * 127 / (1023 - PAD_ON);
+            u32 vel = (pad_peak[pad] - PAD_ON) * 127 / (PAD_FULL - PAD_ON);
 
             ev_push(SMCPAD_EV_PAD_ON, (u8)pad, (s16)(vel < 1 ? 1 : vel > 127 ? 127 : vel));
             pad_state[pad] = PAD_HELD;

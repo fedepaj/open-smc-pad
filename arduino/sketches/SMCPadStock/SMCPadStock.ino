@@ -67,7 +67,7 @@ static uint8_t applyCurve(int v) {
 }
 
 static int pressureToLevel(int raw) {                // 0..127
-  return constrain((raw - 120) * 127 / (900 - 120), 0, 127);
+  return constrain((raw - 150) * 127 / (960 - 150), 0, 127);
 }
 
 // ---------------------------------------------------------------- pads -> MIDI
