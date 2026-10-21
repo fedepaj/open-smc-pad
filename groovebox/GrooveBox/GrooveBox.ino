@@ -1,4 +1,4 @@
-// GrooveBox: a 16-track MIDI step sequencer for the SMC-PAD (docs/sequencer-design.md).
+// GrooveBox: a 16-track MIDI step sequencer for the SMC-PAD (docs/design.md).
 //
 // Modes (the colours tell where you are):
 //   PLAY    (default)          pads play the 16 tracks (and select them); live recording;

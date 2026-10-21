@@ -1,4 +1,4 @@
-// The pattern data: 16 tracks (one per pad) of up to 64 steps (docs/sequencer-design.md).
+// The pattern data: 16 tracks (one per pad) of up to 64 steps (docs/design.md).
 #pragma once
 #include <Arduino.h>
 

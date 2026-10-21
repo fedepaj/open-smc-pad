@@ -1,5 +1,5 @@
 # Ableton Live control surface script for the SMC-PAD running our firmware (GrooveBox).
-# Install: host/install_ableton.sh (copies this folder to the User Library's Remote Scripts),
+# Install: tools/install_ableton.sh (copies this folder to the User Library's Remote Scripts),
 # then Live > Settings > Link, Tempo & MIDI: Control Surface "SMC_PAD", input and output
 # "SMC-PAD open fw".
 from __future__ import absolute_import, print_function, unicode_literals

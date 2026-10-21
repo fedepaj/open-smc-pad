@@ -118,7 +118,7 @@ int smcpad_store_write(int key, const void *buf, int len)
 }
 
 /* ------------------------------------------------------------------ raw flash: USRFLASH only
- * Flash 0x77000-0x7E000 (docs/sequencer-design.md): above the VM, stored plain; the stock
+ * Flash 0x77000-0x7E000 (groovebox/docs/design.md): above the VM, stored plain; the stock
  * firmware kept its presets there. BTIF (0x75000), USRTRIM (0x7E000), key_mac (0x7F000), the
  * VM and everything below (application, bootloader) are refused.
  * Erase / program go through our own driver (fw/smcpad/smcpad_flash.c: RAM code, interrupts

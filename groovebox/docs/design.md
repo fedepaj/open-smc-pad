@@ -2,7 +2,7 @@
 
 Our own firmware for the SMC-PAD: a 16-track MIDI step sequencer in the spirit of the
 Digitakt and the BeatStep Pro, with a slimmed-down stock controller as its PLAY mode. It is
-an Arduino sketch on the core (`arduino/sketches/GrooveBox`), so it builds and uploads like
+an Arduino sketch on the core (`GrooveBox/`), so it builds and uploads like
 any other. Agreed with the user on 2026-10-20.
 
 The pad has no display: 16 RGB pads, 10 single-colour button LEDs, 8 endless encoders without
