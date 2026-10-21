@@ -80,6 +80,31 @@ static uint32_t patternPack(const Pattern &p, uint8_t *out) {
   return n;
 }
 
+// every field read once into a local: Arduino's constrain() is a macro and evaluates its
+// argument more than once (with in[n++] that read the wrong bytes: a track of length 0)
+static uint8_t clampByte(uint8_t v, uint8_t lo, uint8_t hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+// what the engine divides by or indexes with, kept valid whatever the flash held
+static void patternSanitize(Pattern &p) {
+  p.length = clampByte(p.length / 16 * 16, 16, MAX_STEPS);
+  p.swing = clampByte(p.swing, 0, 4);
+  for (int t = 0; t < TRACKS; t++) {
+    Track &k = p.track[t];
+    k.channel &= 15;
+    k.note &= 127;
+    k.length = clampByte(k.length, 1, MAX_STEPS);
+    k.speed = clampByte(k.speed, SPEED_HALF, SPEED_DOUBLE);
+    k.gate = clampByte(k.gate, 5, 100);
+    for (int s = 0; s < MAX_STEPS; s++) {
+      Step &st = p.step[t][s];
+      st.ratchet = clampByte(st.ratchet, 1, 4);
+      st.velocity = clampByte(st.velocity, 1, 127);
+      if (st.micro < -11 || st.micro > 11) st.micro = 0;
+      if (st.cond > COND_LAST) st.cond = COND_ALWAYS;
+    }
+  }
+}
+
 static bool patternUnpack(Pattern &p, const uint8_t *in, uint32_t len) {
   uint32_t n = 0;
   if (len < 2 + TRACKS * TRACK_BYTES + 2) return false;
@@ -91,8 +116,8 @@ static bool patternUnpack(Pattern &p, const uint8_t *in, uint32_t len) {
     k.channel = in[n++] & 15;
     k.note = in[n++] & 127;
     k.velocity = in[n++];
-    k.length = constrain(in[n++], 1, MAX_STEPS);
-    k.speed = min(in[n++], (uint8_t)SPEED_DOUBLE);
+    k.length = in[n++];
+    k.speed = in[n++];
     k.gate = in[n++];
     for (int i = 0; i < LOCKS; i++) k.lockCC[i] = in[n++];
     for (int i = 0; i < LOCKS; i++) k.lockBase[i] = in[n++] & 127;
@@ -107,10 +132,11 @@ static bool patternUnpack(Pattern &p, const uint8_t *in, uint32_t len) {
     st.velocity = in[n++];
     st.micro = (int8_t)in[n++];
     st.cond = in[n++];
-    st.ratchet = constrain(in[n++], 1, 4);
+    st.ratchet = in[n++];
     uint8_t mask = in[n++];
     for (int i = 0; i < LOCKS; i++) st.lock[i] = mask & (1 << i) && n < len ? in[n++] : NO_LOCK;
   }
+  patternSanitize(p);
   return true;
 }
 
