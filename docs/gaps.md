@@ -8,9 +8,10 @@ other documents and in git.
 - **Release packages:** the install bundle (installer, bootloader area, a first firmware) for
   `install_from_stock.py --from <dir>` without a source build; the precompiled core for the
   Arduino platform; GrooveBox and SMCPadStock binaries.
-- **Boards Manager package:** the JieLi toolchain cannot be redistributed, so the package must
-  fetch it (pkgman.jieliapp.com) at install time; macOS needs blink (non-VFS build) and a
-  Debian 9 root, today set up by hand.
+- **Boards Manager:** the pipeline is in place (`.github/workflows/arduino.yml`, `arduino/release/`)
+  and checked locally end to end; the first `v*` tag publishes it. Windows is not supported yet.
+  The JieLi toolchain is downloaded from JieLi's server (no license file: we may not host it); a
+  weekly job checks that download.
 
 ## Firmware
 

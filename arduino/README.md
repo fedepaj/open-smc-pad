@@ -78,17 +78,22 @@ Your pad needs the open firmware's bootloader:
 minutes. Then uploads are like any native-USB Arduino: the IDE resets the pad into the bootloader
 (1200-baud touch) and sends the sketch with `dfu-util`.
 
-**Boards Manager:** coming with the first release (the JieLi compiler cannot be redistributed,
-so the package will fetch it). Until then, the development install:
+**Arduino IDE (Boards Manager)** — macOS or Linux x86-64:
 
-1. Linux x86-64 or macOS; `python3`, `dfu-util` on the PATH.
-2. The JieLi Linux toolchain from [pkgman.jieliapp.com](http://pkgman.jieliapp.com/doc/all),
-   linked as `smcpad/tools/toolchain`. On macOS it runs through
-   [blink](https://github.com/jart/blink) (built without its VFS, `smcpad/tools/blink/blink`) with a
-   Debian 9 root (`smcpad/tools/blink/root`): `tools/jl.sh` does it.
-3. The precompiled core in `smcpad/system/` (from a release, or built: `fw/build.sh` +
-   `make_system.sh`, see [smc-pad-firmware](https://github.com/fedepaj/smc-pad-firmware)).
-4. `ln -s "$PWD/smcpad" ~/Documents/Arduino/hardware/smcpad/br25`
+1. *Settings → Additional boards manager URLs*:
+   `https://github.com/fedepaj/open-smc-pad/releases/latest/download/package_smcpad_index.json`
+2. *Boards Manager*: install **SMC-PAD (open firmware)**. It brings the JieLi compiler (downloaded
+   from JieLi), our tools and dfu-util. On Apple silicon dfu-util runs under Rosetta.
+3. Board **M-Vave SMC-PAD (open firmware)**, the pad's serial port, Upload.
+
+With arduino-cli: `arduino-cli core install smcpad:br25 --additional-urls <the URL above>`.
+
+**Development install** (to work on the core itself): the umbrella repository with
+`fw/build.sh` and `arduino/make_system.sh` (it fills `smcpad/system/` and writes a
+`platform.local.txt` pointing at local tools), then
+`ln -s "$PWD/arduino/smcpad" ~/Documents/Arduino/hardware/smcpad/br25`. On macOS it needs
+`blink` built in `work/blink-src` and a Linux root in `work/blink-root9`, as
+`release/build_host_tools.sh` makes them.
 
 Board **M-Vave SMC-PAD (open firmware)** then appears in the Arduino IDE, and
 `arduino-cli compile --fqbn smcpad:br25:smcpad MySketch` / `arduino-cli upload ... -p <port>`
