@@ -69,12 +69,10 @@ def update_package(template, cfg):
 def main():
     ap = argparse.ArgumentParser(description="build the bootloader update package (DFU alt 2)")
     ap.add_argument("--out", default=str(ROOT / "work/flash/boot_update.bin"))
-    ap.add_argument("--dump", default=str(ROOT / "dumps/SMC-PAD_004_flash_t0.bin"),
-                    help="stock dump, used as the directory template")
+    ap.add_argument("--dump", help="directory template and cfg_tool.bin from a stock dump "
+                                   "(default: jlimage's defaults, the same values)")
     a = ap.parse_args()
-    dump = Path(a.dump).read_bytes()
-    template = J.read_dir(dump, J.AREA_BASE)
-    cfg = dump[J.AREA_BASE + template[2].offset: J.AREA_BASE + template[2].offset + template[2].size]
+    template, cfg = J.template_and_cfg(a.dump)
     pkg = update_package(template, cfg)
     Path(a.out).write_bytes(pkg)
     print(f"bootloader update package written to {a.out} ({len(pkg):#x} bytes)")

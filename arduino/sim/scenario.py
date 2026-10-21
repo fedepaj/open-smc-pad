@@ -37,9 +37,10 @@ class Scenario:
         self.t += ms
         return self
 
-    def caption(self, text):
+    def caption(self, text, read=700):
+        """Shows `text` from now on; `read` ms pass first, so it can be read before things move."""
         self.captions.append((self.t, text))
-        return self
+        return self.wait(read)
 
     # ---- pads
     def pad_down(self, pad, velocity=100, pressure=700):
@@ -53,7 +54,7 @@ class Scenario:
         self.pad_spans.append((pad, start, self.t, pressure / 1023))
         return self
 
-    def tap_pad(self, pad, velocity=100, pressure=700, hold=140, gap=110):
+    def tap_pad(self, pad, velocity=100, pressure=700, hold=170, gap=230):
         self.pad_down(pad, velocity, pressure).wait(hold).pad_up(pad).wait(gap)
         return self
 
@@ -72,7 +73,7 @@ class Scenario:
         self.button_spans.append((button, self._button_down.pop(button), self.t))
         return self
 
-    def tap(self, button, hold=140, gap=160):
+    def tap(self, button, hold=170, gap=300):
         return self.press(button).wait(hold).release(button).wait(gap)
 
     # ---- knobs

@@ -33,20 +33,20 @@ def track_pad(track):
 
 
 def select_track(s, track):
-    return s.press(BUTTON.SHIFT).wait(120).tap_pad(track_pad(track), hold=120, gap=60).release(BUTTON.SHIFT).wait(150)
+    return s.press(BUTTON.SHIFT).wait(250).tap_pad(track_pad(track), hold=170, gap=150).release(BUTTON.SHIFT).wait(350)
 
 
 def beat(s, quick=False):
-    """A kick, a snare, closed hats: in STEP mode."""
-    gap = 70 if quick else 110
+    """A kick, a snare, closed hats: in STEP mode (quick: for scenes where the beat is not the point)."""
+    hold, gap = (90, 60) if quick else (170, 230)
     for n in (1, 5, 9, 13):
-        s.tap_pad(step_pad(n), hold=110, gap=gap)
+        s.tap_pad(step_pad(n), hold=hold, gap=gap)
     select_track(s, 3)
     for n in (5, 13):
-        s.tap_pad(step_pad(n), hold=110, gap=gap)
+        s.tap_pad(step_pad(n), hold=hold, gap=gap)
     select_track(s, 7)
     for n in (1, 3, 5, 7, 9, 11, 13, 15):
-        s.tap_pad(step_pad(n), hold=90, gap=50 if quick else 80)
+        s.tap_pad(step_pad(n), hold=hold, gap=gap if not quick else 40)
     return s
 
 
@@ -54,10 +54,20 @@ def beat(s, quick=False):
 
 def hero():
     s = Scenario()
-    s.caption("STEP mode: tap the steps").tap(BUTTON.PAD_BANK)
-    beat(s, quick=True)
-    s.caption("PLAY").tap(BUTTON.PLAY).wait(2200)
-    s.caption("back to PLAY mode: the pads flash with their tracks").tap(BUTTON.PAD_BANK).wait(2600)
+    s.caption("PAD BANK: STEP mode").tap(BUTTON.PAD_BANK)
+    s.caption("the kick: steps 1, 5, 9, 13", read=300)
+    for n in (1, 5, 9, 13):
+        s.tap_pad(step_pad(n))
+    s.caption("SHIFT + pad 3: the snare, steps 5 and 13", read=300)
+    select_track(s, 3)
+    for n in (5, 13):
+        s.tap_pad(step_pad(n))
+    s.caption("SHIFT + pad 7: closed hats on every other step", read=300)
+    select_track(s, 7)
+    for n in (1, 3, 5, 7, 9, 11, 13, 15):
+        s.tap_pad(step_pad(n), hold=130, gap=150)
+    s.caption("PLAY", read=0).tap(BUTTON.PLAY).wait(3000)
+    s.caption("PAD BANK again: PLAY mode, every pad flashes with its track", read=0).tap(BUTTON.PAD_BANK).wait(3500)
     return s, "hero.gif", {}
 
 
@@ -65,7 +75,7 @@ def play_mode():
     s = Scenario()
     s.caption("PLAY mode: each pad is a track (a drum voice); hit it to play it").wait(300)
     for p, v in ((0, 110), (2, 90), (6, 70), (6, 50), (0, 120), (2, 100), (6, 60), (10, 90)):
-        s.tap_pad(p, velocity=v, pressure=500 + v * 3, hold=120, gap=140)
+        s.tap_pad(p, velocity=v, pressure=500 + v * 3, hold=150, gap=260)
     s.caption("the pad you hit is the selected track (brighter)").wait(900)
     return s, "play-mode.gif", {}
 
@@ -121,7 +131,7 @@ def mute_mode():
     beat(s, quick=True)
     s.tap(BUTTON.PLAY).wait(400)
     s.caption("SHIFT + PAD BANK: MUTE mode, one pad per track").press(BUTTON.SHIFT).wait(100)
-    s.tap(BUTTON.PAD_BANK, gap=60).release(BUTTON.SHIFT).wait(1000)
+    s.tap(BUTTON.PAD_BANK, gap=200).release(BUTTON.SHIFT).wait(1000)
     s.caption("tap a track to mute it, tap again to bring it back").tap_pad(track_pad(7)).wait(1300)
     s.tap_pad(track_pad(1)).wait(1200).tap_pad(track_pad(7)).tap_pad(track_pad(1)).wait(1000)
     return s, "mute-mode.gif", {}
@@ -133,7 +143,7 @@ def pattern_mode():
     for n in (1, 5, 9, 13):
         s.tap_pad(step_pad(n), hold=80, gap=60)
     s.caption("SHIFT + KNOB BANK: PATTERN mode, 16 patterns").press(BUTTON.SHIFT).wait(100)
-    s.tap(BUTTON.KNOB_BANK, gap=60).release(BUTTON.SHIFT).wait(700)
+    s.tap(BUTTON.KNOB_BANK, gap=200).release(BUTTON.SHIFT).wait(900)
     s.caption("SHIFT + a pad: copy this pattern there").press(BUTTON.SHIFT).wait(100).tap_pad(1).release(BUTTON.SHIFT)
     s.wait(700)
     s.caption("PLAY, then tap a pattern: it takes over at the end of the bar").tap(BUTTON.PLAY).wait(500)
@@ -151,7 +161,7 @@ def note_repeat():
         s.wait(300).pressure(6, p)
     s.caption("press harder: louder repeats").wait(300).pad_up(6).release(BUTTON.NOTE_REPEAT).wait(300)
     s.caption("SHIFT + NOTE REPEAT: rate, swing, latch, sync, tap tempo").press(BUTTON.SHIFT).wait(80)
-    s.tap(BUTTON.NOTE_REPEAT, gap=60).release(BUTTON.SHIFT).wait(600)
+    s.tap(BUTTON.NOTE_REPEAT, gap=200).release(BUTTON.SHIFT).wait(900)
     s.caption("pads 1-8 rate (1/4 .. 1/32T), 9-13 swing").tap_pad(6).wait(400).tap_pad(9).wait(900)
     s.tap(BUTTON.NOTE_REPEAT).wait(300)
     return s, "note-repeat.gif", {}

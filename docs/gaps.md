@@ -5,9 +5,6 @@ other documents and in git.
 
 ## Before the first release
 
-- **`cfg_tool.bin` comes from the stock dump.** `arduino/make_system.sh` (the app area template)
-  and `host/package_fw.sh` take the configuration blob that follows `app.bin` out of
-  `dumps/SMC-PAD_004_flash_t0.bin`. It must be generated from the SDK's own configuration
   (`cpu/br25/tools`, isd_config) so that no release file carries vendor data.
 - **Release packages:** the install bundle (installer, bootloader area, a first firmware) for
   `install_from_stock.py --from <dir>` without a source build; the precompiled core for the

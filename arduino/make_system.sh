@@ -11,9 +11,7 @@ cp $ROOT/fw/smcpad/arduino/smcpad_rt.h $S/include/
 python3 - "$ROOT" "$S/app_template.bin" <<'PY'
 import sys; sys.path.insert(0, sys.argv[1] + "/host")
 import jlimage as J
-dump = open(sys.argv[1] + "/dumps/SMC-PAD_004_flash_t0.bin", "rb").read()
-t = J.read_dir(dump, J.AREA_BASE); c = t[2]
-cfg = dump[J.AREA_BASE + c.offset: J.AREA_BASE + c.offset + c.size]
+t, cfg = J.template_and_cfg()            # the SDK's cfg_tool.bin, no vendor image needed
 area = J.build_app_area(b"\0" * 0x200, cfg, t, entry_vma=0x1E08120, vm=(0x71000, 0x4000), prct_size=0x71000)
 open(sys.argv[2], "wb").write(area[:0x120] + cfg)
 PY

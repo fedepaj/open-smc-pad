@@ -106,6 +106,51 @@ class Entry:
                 f"hdr={self.hdr_crc:#06x} data={self.data_crc:#06x} tag={self.tag.hex()}")
 
 
+# The directory every BR25 app area carries, as JieLi's isd tools lay it out for a 512 KB
+# flash: the area head (offset = entry point), app.bin, cfg_tool.bin, then the special areas
+# (VM, PRCT = the protected code range, BTIF / EXIF = Bluetooth and factory info, USRFLASH,
+# USRTRIM). Offsets, sizes and CRCs of the first three are recomputed by build_app_area(); VM
+# and PRCT are moved for our layout. Values as the SDK's tools write them (the factory image
+# has exactly these), so no vendor image is needed to build ours.
+DEFAULT_DIR = [
+    # offset, size, attr, resvd, index, name + tag (16 bytes)
+    (0x01e00120, 0x0245fc, 0x83, 0xff, 0, b'app_area_head\x00\xff\xff'),
+    (0x00000120, 0x02417c, 0x82, 0xff, 0, b'app.bin\x00\xff\xff\xff\xff\xff\xff\xff\xff'),
+    (0x0002429c, 0x000360, 0x82, 0xff, 0, b'cfg_tool.bin\x00\xff\xff\xff'),
+    (0x00026000, 0x04f000, 0x12, 0x80, 0, b'VM\x00\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x10\x00\x00'),
+    (0x00000000, 0x026000, 0x92, 0x82, 0, b'PRCT\x00\xff\xff\xff\xff\xff\xff\xffCODE'),
+    (0x00075000, 0x001000, 0x92, 0x81, 0, b'BTIF\x00\xff\xff\xff\xff\xff\xff\xffAUTO'),
+    (0x00076000, 0x001000, 0x92, 0x81, 0, b'EXIF\x00\xff\xff\xff\xff\xff\xff\xffAUTO'),
+    (0x00077000, 0x007000, 0x92, 0x80, 0, b'USRFLASH\x00\xff\xff\xff\xff\xff\xff\xff'),
+    (0x0007e000, 0x001000, 0x92, 0x80, 1, b'USRTRIM\x00\xff\xff\xff\xff\xff\xff\xff\xff'),
+]
+
+# The SDK's configuration blob for the AC696x (cpu/br25/tools/cfg_tool.bin): the factory firmware
+# carries the very same file.
+SDK_CFG_TOOL = ROOT / "sdk/fw-AC63_BT_SDK/cpu/br25/tools/cfg_tool.bin"
+
+
+def default_template():
+    """The 9 directory entries of DEFAULT_DIR, data CRCs 0xFFFF for the special areas."""
+    out = []
+    for offset, size, attr, resvd, index, name in DEFAULT_DIR:
+        e = Entry()
+        e.offset, e.size, e.attr, e.resvd, e.index = offset, size, attr, resvd, index
+        e.name, e.tag = name[:12], name[12:]
+        e.data_crc = 0xFFFF
+        out.append(e)
+    return out
+
+
+def template_and_cfg(dump_path=None):
+    """(directory template, cfg_tool.bin): from a dump if one is given, else the defaults."""
+    if dump_path:
+        dump = Path(dump_path).read_bytes()
+        t = read_dir(dump, AREA_BASE)
+        return t, dump[AREA_BASE + t[2].offset: AREA_BASE + t[2].offset + t[2].size]
+    return default_template(), SDK_CFG_TOOL.read_bytes()
+
+
 def read_dir(image, base=0):
     return [Entry(image[base + i * ENTRY_SIZE: base + (i + 1) * ENTRY_SIZE])
             for i in range(DIR_ENTRIES)]
@@ -210,11 +255,10 @@ def cmd_selftest(args):
 
 
 def cmd_build(args):
-    dump = Path(args.dump).read_bytes()
-    entries = read_dir(dump, AREA_BASE)
+    entries, cfg = template_and_cfg(args.dump)
     app = Path(args.app).read_bytes()
-    cfg = (Path(args.cfg).read_bytes() if args.cfg else
-           dump[AREA_BASE + entries[2].offset: AREA_BASE + entries[2].offset + entries[2].size])
+    if args.cfg:
+        cfg = Path(args.cfg).read_bytes()
 
     # The entry point is where app.bin lands once the area sits at --area-base.
     entry = args.entry
@@ -263,9 +307,9 @@ def main():
 
     p = sub.add_parser("build", help="build an app area around our own app.bin")
     p.add_argument("--app", default=str(ROOT / "fw/smcpad/out/app.bin"))
-    p.add_argument("--cfg", help="cfg_tool.bin (default: the one in the dump)")
-    p.add_argument("--dump", default=str(ROOT / "dumps/SMC-PAD_004_flash_t0.bin"),
-                   help="stock dump, used as the directory template")
+    p.add_argument("--cfg", help="cfg_tool.bin (default: the SDK's)")
+    p.add_argument("--dump", help="take the directory template and cfg_tool.bin from a stock dump "
+                                  "instead of the defaults (they are the same)")
     p.add_argument("--entry", type=lambda s: int(s, 0), help="entry point VMA (app_area_head offset)")
     p.add_argument("--area-base", type=lambda s: int(s, 0),
                    help="flash offset the area will be written to (default 0x1000, the stock "
