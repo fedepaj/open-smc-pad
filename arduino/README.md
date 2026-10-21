@@ -1,8 +1,8 @@
-# smc-pad-arduino
+# The SMC-PAD Arduino core
 
 **An Arduino core for the M-Vave SMC-PAD**: write sketches for its 16 RGB velocity pads,
 8 knobs, 10 buttons, USB-MIDI and Bluetooth MIDI, and upload them over USB like any Arduino
-board. Part of the [open SMC-PAD firmware](https://github.com/fedepaj/open-smc-pad).
+board. Part of the [open SMC-PAD firmware](..).
 
 <p align="center"><img src="https://raw.githubusercontent.com/fedepaj/groovebox/main/docs/img/play-mode.gif" width="560" alt="A sketch running on the SMC-PAD (in the emulator)"></p>
 
@@ -53,7 +53,7 @@ void loop() {
   [GrooveBox](https://github.com/fedepaj/groovebox) is a full step sequencer.
 - **An emulator** ([`sim/`](sim)): any sketch runs on your computer with the real libraries, and
   scenarios of gestures turn into GIFs.
-- **A self-test** ([`tests/CoreTest`](tests/CoreTest), `host/core_test.sh` in the umbrella):
+- **A self-test** ([`tests/CoreTest`](tests/CoreTest), run by [`host/core_test.sh`](../host/core_test.sh)):
   71 checks on the pad, from start-up and timing to flash and BLE.
 
 ### Numbering
@@ -74,7 +74,7 @@ The 3.5 mm MIDI OUT is not driven yet.
 ## Install
 
 Your pad needs the open firmware's bootloader:
-[installing it](https://github.com/fedepaj/open-smc-pad#install) takes a USB cable and a few
+[installing it](../README.md#install) takes a USB cable and a few
 minutes. Then uploads are like any native-USB Arduino: the IDE resets the pad into the bootloader
 (1200-baud touch) and sends the sketch with `dfu-util`.
 
@@ -88,7 +88,7 @@ minutes. Then uploads are like any native-USB Arduino: the IDE resets the pad in
 
 With arduino-cli: `arduino-cli core install smcpad:br25 --additional-urls <the URL above>`.
 
-**Development install** (to work on the core itself): the umbrella repository with
+**Development install** (to work on the core itself): this repository with
 `fw/build.sh` and `arduino/make_system.sh` (it fills `smcpad/system/` and writes a
 `platform.local.txt` pointing at local tools), then
 `ln -s "$PWD/arduino/smcpad" ~/Documents/Arduino/hardware/smcpad/br25`. On macOS it needs
@@ -118,7 +118,7 @@ would mean a two-minute LTO link every time. Instead:
 
 Relinking the LTO output without the plugin reproduces the normal build byte for byte, which is
 what makes this sound. Details and the pitfalls met on the way are in the comments of
-`platform.txt`, `tools/` and the runtime, and in the umbrella's [docs](https://github.com/fedepaj/open-smc-pad/tree/main/docs).
+`platform.txt`, `tools/` and the runtime, and in [docs](../docs).
 
 ## License
 

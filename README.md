@@ -22,13 +22,13 @@ This project replaces its firmware, completely and reversibly, with one you can 
   spirit of the Digitakt and the BeatStep Pro: probability, conditions, ratchets, parameter
   locks, live recording, euclidean patterns, pattern chains, MIDI clock in and out, and an
   Ableton Live script that paints the pads with your Drum Rack.
-- 🧩 **[An Arduino core](https://github.com/fedepaj/smc-pad-arduino)** — write your own firmware as
+- 🧩 **[An Arduino core](arduino)** — write your own firmware as
   an Arduino sketch: libraries for the pads, knobs and LEDs, USB-MIDI, BLE-MIDI, ArduinoBLE,
   EEPROM; upload from the Arduino IDE.
-- 🎹 **The controller it was** — [SMCPadStock](https://github.com/fedepaj/smc-pad-arduino/tree/main/sketches/SMCPadStock)
+- 🎹 **The controller it was** — [SMCPadStock](arduino/sketches/SMCPadStock)
   does what the factory firmware did (notes, CCs, Mackie Control, note repeat, aftertouch), as a
   sketch you can tweak.
-- 🔌 **[A USB bootloader](https://github.com/fedepaj/smc-pad-firmware)** — installed from the stock
+- 🔌 **[A USB bootloader](fw)** — installed from the stock
   firmware over USB, no tools inside the case; firmware updates by DFU from then on, and it
   catches a crashing firmware so the pad can never be lost to a bad upload.
 
@@ -63,7 +63,7 @@ firmware.bin` with the pad in its bootloader (hold **SHIFT + PLAY** while switch
 
 > **Status:** works end to end on the author's pad. The first release will ship the ready-made
 > install package (until then `install_from_stock.py` needs the files from a source build, see
-> [smc-pad-firmware](https://github.com/fedepaj/smc-pad-firmware#building)). To go back to the
+> [fw/README.md](fw/README.md#building)). To go back to the
 > factory firmware you need the recovery path below — keep that in mind.
 
 **Recovery.** The bootloader goes to DFU by itself after a firmware crashes four times at start,
@@ -78,15 +78,18 @@ factory firmware can be written back.
 
 <p align="center"><img src="docs/img/flash-map.svg" width="900" alt="Flash layout"></p>
 
-| repository | | |
-|---|---|---|
-| **open-smc-pad** | this one | docs, reverse engineering notes, host tools (install, flashing, MIDI monitor, tests), the Pico recovery sketch |
-| [smc-pad-firmware](https://github.com/fedepaj/smc-pad-firmware) | `fw/` | the bootloader, the runtime and drivers under the Arduino core |
-| [smc-pad-arduino](https://github.com/fedepaj/smc-pad-arduino) | `arduino/` | the Arduino core, libraries, SMCPadStock, the self-test, the emulator |
-| [groovebox](https://github.com/fedepaj/groovebox) | `groovebox/` | the sequencer, its guide and the Ableton Live script |
+| | |
+|---|---|
+| [`fw/`](fw) | the bootloader, the runtime and drivers under the Arduino core |
+| [`arduino/`](arduino) | the Arduino core (Boards Manager package built by CI), libraries, SMCPadStock, the self-test, the emulator |
+| [`host/`](host) | install from stock, DFU, flashing in ROM mode, MIDI monitor, the core's self-test runner |
+| [`docs/`](docs) | everything learned about the pad, and the decisions |
+| [`hw/jl-usbkey`](hw/jl-usbkey) | the Raspberry Pi Pico recovery sketch (ROM download mode) |
+| [`re/`](re) | reverse engineering scripts and captures |
+| [**groovebox**](https://github.com/fedepaj/groovebox) | **its own repository**: the sequencer, its guide and the Ableton Live script |
 
-Clone with `--recursive`: the sub-repositories, the JieLi SDK, TinyUSB, ArduinoCore-API and the
-JieLi tools by kagaimiq come in as submodules.
+Clone with `--recursive`: the JieLi SDK, TinyUSB, ArduinoCore-API and the JieLi tools by
+kagaimiq come in as submodules.
 
 ## Documentation
 
@@ -129,4 +132,4 @@ risk.
 ## License
 
 MIT — [LICENSE](LICENSE). Parts derived from the JieLi SDK are Apache 2.0
-([smc-pad-firmware/NOTICE](https://github.com/fedepaj/smc-pad-firmware/blob/main/NOTICE)).
+([fw/NOTICE](fw/NOTICE)).

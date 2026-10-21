@@ -1,9 +1,9 @@
-# smc-pad-firmware
+# fw: bootloader and runtime
 
-The low half of the [open SMC-PAD firmware](https://github.com/fedepaj/open-smc-pad): the
+The low half of the [open SMC-PAD firmware](..): the
 **USB DFU bootloader** that replaces the stock firmware for good, and the **firmware runtime**
 (JieLi SDK + our drivers) that becomes the precompiled core of the
-[Arduino core](https://github.com/fedepaj/smc-pad-arduino).
+[Arduino core](../arduino).
 
 Most people never build this: the Arduino core ships the result, and releases carry ready
 binaries. This is for changing the bootloader, the drivers or the runtime API.
@@ -35,13 +35,12 @@ on. Then it is a DFU device: `dfu-util -d 1209:0002 -a 0 -D app.bin`. Alternate 
 alternate 2 takes a bootloader update (written to a staging area, verified, then installed by a
 small installer, so a cut power never leaves the pad without one).
 
-The full story, decisions and pitfalls: [docs/bootloader.md](https://github.com/fedepaj/open-smc-pad/blob/main/docs/bootloader.md),
-[docs/flash-layout.md](https://github.com/fedepaj/open-smc-pad/blob/main/docs/flash-layout.md).
+The full story, decisions and pitfalls: [docs/bootloader.md](../docs/bootloader.md), [docs/flash-layout.md](../docs/flash-layout.md).
 
 ## Building
 
-This repository is meant to sit at `fw/` in the [umbrella repository](https://github.com/fedepaj/open-smc-pad),
-which brings the JieLi SDK, TinyUSB and the Docker file as submodules.
+From the repository root (the JieLi SDK and TinyUSB are submodules there, the Docker file in
+`docker/`).
 
 You need Docker (with linux/amd64 emulation on Apple silicon) and the JieLi **Linux toolchain and
 post-build tools**, from [pkgman.jieliapp.com](http://pkgman.jieliapp.com/doc/all), unpacked in
