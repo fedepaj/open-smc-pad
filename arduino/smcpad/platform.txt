@@ -14,7 +14,17 @@ tools.jl.toolchain={runtime.tools.jieli-toolchain.path}
 tools.jl.host={runtime.tools.smcpad-tools.path}
 tools.jl.cmd="{runtime.platform.path}/tools/jl.sh" "{tools.jl.toolchain}" "{tools.jl.host}"
 tools.jl.sysroot={tools.jl.toolchain}/pi32v2
+tools.jl.include={tools.jl.sysroot}/include
+tools.jl.lib={tools.jl.sysroot}/lib
 tools.smcpad_pack.cmd="{tools.jl.host}/smcpad_pack"
+
+# Windows: JieLi's own Windows toolchain, which jieli_fetch.cmd (in the jieli-toolchain package)
+# takes out of JieLi's installer at the first build; jl.exe runs its tools
+tools.jl.cmd.windows="{tools.jl.host}/jl.exe" "{tools.jl.toolchain}" "{tools.jl.host}"
+tools.jl.include.windows={tools.jl.toolchain}/pi32/pi32v2-include
+tools.jl.lib.windows={tools.jl.toolchain}/pi32/pi32v2-lib
+tools.smcpad_pack.cmd.windows="{tools.jl.host}/smcpad_pack.exe"
+recipe.hooks.prebuild.1.pattern.windows=cmd /c "{tools.jl.toolchain}\jieli_fetch.cmd"
 
 compiler.warning_flags=-w
 compiler.warning_flags.none=-w
@@ -24,7 +34,7 @@ compiler.warning_flags.all=-Wall -Wextra
 
 # -enable-ipra=false: the JieLi clang otherwise trusts the body of a weak default across a call
 # (docs/bootloader.md, "Pitfalls"); the core is not LTO, so the strong definition is not seen.
-compiler.common.flags=-target pi32v2 -mcpu=r3 -integrated-as -Oz -fno-common -ffunction-sections -fdata-sections -mllvm -enable-ipra=false -isystem "{tools.jl.sysroot}/include" "-I{runtime.platform.path}/system/include"
+compiler.common.flags=-target pi32v2 -mcpu=r3 -integrated-as -Oz -fno-common -ffunction-sections -fdata-sections -mllvm -enable-ipra=false -isystem "{tools.jl.include}" "-I{runtime.platform.path}/system/include"
 compiler.c.flags={compiler.common.flags} -std=gnu11 {compiler.warning_flags}
 compiler.cpp.flags={compiler.common.flags} -std=gnu++14 -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit {compiler.warning_flags}
 compiler.S.flags={compiler.common.flags} -x assembler-with-cpp
@@ -41,7 +51,7 @@ recipe.ar.pattern={tools.jl.cmd} ar rcs "{archive_file_path}" "{object_file}"
 
 # the sketch + core + libraries against the precompiled SDK object (system/, from
 # arduino/make_system.sh): plain ld, no LTO
-recipe.c.combine.pattern={tools.jl.cmd} ld -o "{build.path}/{build.project_name}.elf" {object_files} "{build.path}/{archive_file}" "{runtime.platform.path}/system/smcpad_core.o" --start-group "{runtime.platform.path}/system/libsmcpad_native.a" "{tools.jl.sysroot}/lib/r3/libc.a" "{tools.jl.sysroot}/lib/r3/libm.a" "{tools.jl.sysroot}/lib/r3/libcompiler-rt.a" --end-group "-T{runtime.platform.path}/system/sdk.ld" --gc-sections --sort-common --dont-complain-call-overflow {compiler.ld.extra_flags}
+recipe.c.combine.pattern={tools.jl.cmd} ld -o "{build.path}/{build.project_name}.elf" {object_files} "{build.path}/{archive_file}" "{runtime.platform.path}/system/smcpad_core.o" --start-group "{runtime.platform.path}/system/libsmcpad_native.a" "{tools.jl.lib}/r3/libc.a" "{tools.jl.lib}/r3/libm.a" "{tools.jl.lib}/r3/libcompiler-rt.a" --end-group "-T{runtime.platform.path}/system/sdk.ld" --gc-sections --sort-common --dont-complain-call-overflow {compiler.ld.extra_flags}
 
 # ELF -> app area for the bootloader (flash 0x9000)
 recipe.objcopy.bin.pattern={tools.smcpad_pack.cmd} "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin" --template "{runtime.platform.path}/system/app_template.bin"

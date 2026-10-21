@@ -1,8 +1,9 @@
 # The Arduino platform for the Boards Manager.
 #
 #   every push / PR: build the precompiled core (JieLi SDK, in Docker), the platform archive and
-#                    smcpad-tools for Linux and macOS; install them with arduino-cli from a local
-#                    index and compile every example, SMCPadStock and the core's self-test
+#                    smcpad-tools for Linux, macOS and Windows; install them with arduino-cli from a local
+#                    index (on Linux and on Windows) and compile every example, SMCPadStock and
+#                    the core's self-test
 #   tag v1.2.3:      the same, then a GitHub release with package_smcpad_index.json, so
 #                    https://github.com/fedepaj/open-smc-pad/releases/latest/download/package_smcpad_index.json
 #                    is the URL to give the Arduino IDE
@@ -77,8 +78,20 @@ jobs:
           name: tools-${{ matrix.os }}
           path: dist/
 
+  windows-tools:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y mingw-w64 zip
+      - run: arduino/release/build_windows_tools.sh "${{ needs.version.outputs.version }}" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tools-windows
+          path: dist/
+
   test:
-    needs: [version, core, host-tools]
+    needs: [version, core, host-tools, windows-tools]
     # one missing host package (say, the Intel Mac one) does not hold the others back
     if: always() && needs.core.result == 'success'
     runs-on: ubuntu-latest
@@ -100,16 +113,46 @@ jobs:
       - name: Compile the examples, SMCPadStock and the self-test
         run: |
           set -e
-          P="$HOME/.arduino15/packages/smcpad/hardware/br25/${{ needs.version.outputs.version }}"
-          for s in "$P"/libraries/*/examples/*/ arduino/sketches/SMCPadStock arduino/tests/CoreTest; do
+          for s in arduino/smcpad/libraries/*/examples/*/ arduino/sketches/SMCPadStock arduino/tests/CoreTest; do
+            echo "::group::$s"
+            arduino-cli compile --fqbn smcpad:br25:smcpad "$s"
+            echo "::endgroup::"
+          done
+
+  test-windows:
+    needs: [version, core, host-tools, windows-tools]
+    if: always() && needs.core.result == 'success' && needs.windows-tools.result == 'success'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install the platform from a local index (the first build fetches JieLi's compiler)
+        run: |
+          python arduino/release/make_index.py "${{ needs.version.outputs.version }}" dist http://127.0.0.1:8000 > dist/package_smcpad_index.json
+          (cd dist && python -m http.server 8000 >/dev/null 2>&1 &)
+          sleep 2
+          URL=http://127.0.0.1:8000/package_smcpad_index.json
+          arduino-cli core update-index --additional-urls "$URL"
+          arduino-cli core install smcpad:br25 --additional-urls "$URL"
+      - name: Compile the examples, SMCPadStock and the self-test
+        run: |
+          set -e
+          for s in arduino/smcpad/libraries/*/examples/*/ arduino/sketches/SMCPadStock arduino/tests/CoreTest; do
             echo "::group::$s"
             arduino-cli compile --fqbn smcpad:br25:smcpad "$s"
             echo "::endgroup::"
           done
 
   release:
-    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.test.result == 'success'
-    needs: [version, test]
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.test.result == 'success' && needs.test-windows.result == 'success'
+    needs: [version, test, test-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

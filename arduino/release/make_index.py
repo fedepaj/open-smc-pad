@@ -32,10 +32,19 @@ def describe(path, base):
             "checksum": "SHA-256:" + hashlib.sha256(data).hexdigest(), "size": str(len(data))}
 
 
+def host_of(archive, version):
+    name = archive.name[len(f"smcpad-tools-{version}-"):]
+    return name[: -len(".tar.gz")] if name.endswith(".tar.gz") else name[: -len(".zip")]
+
+
 def main():
     version, artifacts, base = sys.argv[1], Path(sys.argv[2]), sys.argv[3]
     platform = artifacts / f"smcpad-br25-{version}.tar.bz2"
-    tools = sorted(artifacts.glob(f"smcpad-tools-{version}-*.tar.gz"))
+    tools = sorted(artifacts.glob(f"smcpad-tools-{version}-*.tar.gz")) + \
+        sorted(artifacts.glob(f"smcpad-tools-{version}-*.zip"))
+    # Windows: our fetcher package in the place of JieLi's archive (their Windows toolchain is an
+    # installer, which the Boards Manager cannot run: jieli_fetch.cmd extracts it at the first build)
+    win_toolchain = artifacts / f"jieli-toolchain-{JIELI_TOOLCHAIN['version']}-i686-mingw32.zip"
     if not platform.exists() or not tools:
         sys.exit(f"missing artifacts in {artifacts}")
     index = {"packages": [{
@@ -60,10 +69,10 @@ def main():
         "tools": [
             {"name": "jieli-toolchain", "version": JIELI_TOOLCHAIN["version"],
              "systems": [dict(host=h, **{k: v for k, v in JIELI_TOOLCHAIN.items() if k != "version"})
-                         for h in TOOLCHAIN_HOSTS]},
+                         for h in TOOLCHAIN_HOSTS] +
+                        ([dict(host="i686-mingw32", **describe(win_toolchain, base))] if win_toolchain.exists() else [])},
             {"name": "smcpad-tools", "version": version,
-             "systems": [dict(host=t.name[len(f"smcpad-tools-{version}-"):-len(".tar.gz")], **describe(t, base))
-                         for t in tools]},
+             "systems": [dict(host=host_of(t, version), **describe(t, base)) for t in tools]},
         ],
     }]}
     json.dump(index, sys.stdout, indent=2)
