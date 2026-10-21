@@ -5,7 +5,6 @@ other documents and in git.
 
 ## Before the first release
 
-  (`cpu/br25/tools`, isd_config) so that no release file carries vendor data.
 - **Release packages:** the install bundle (installer, bootloader area, a first firmware) for
   `install_from_stock.py --from <dir>` without a source build; the precompiled core for the
   Arduino platform; GrooveBox and SMCPadStock binaries.
