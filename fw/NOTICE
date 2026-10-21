@@ -1,0 +1,19 @@
+open-smc-pad firmware
+=====================
+
+Our code is under the MIT license (LICENSE):
+  boot/                       the DFU bootloader and the installer
+  smcpad/arduino/             the runtime (smcpad_rt.h) behind the Arduino core
+  smcpad/usb/                 the BR25 USB device driver for TinyUSB, descriptors, glue
+  smcpad/smcpad_*.c           debug channel, fault handler, flash driver
+  smcpad/examples/smcpad_test/, smcpad/examples/idle/app_idle.c (rewritten)
+  build.sh, the build scripts and linker script patches
+
+The rest of smcpad/ (app_main.c, version.c, board/, config/, include/, modules/, the other
+examples/) comes from JieLi's AC63 Bluetooth SDK, https://github.com/Jieli-Tech/fw-AC63_BT_SDK,
+"Copyright JieLi Technology", licensed under the Apache License 2.0 (LICENSE-APACHE-2.0), with
+our changes (board configuration for the SMC-PAD, task table, BLE hooks). The SDK itself, with
+its precompiled libraries, is a submodule of the umbrella repository and is not part of this
+one.
+
+TinyUSB (MIT, hathach) is used from its own repository.

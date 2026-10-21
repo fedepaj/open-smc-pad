@@ -1,54 +1,120 @@
-# Arduino core for the SMC-PAD (work in progress)
+# smc-pad-arduino
 
-## Use it (development install, macOS / Linux x86-64)
+**An Arduino core for the M-Vave SMC-PAD**: write sketches for its 16 RGB velocity pads,
+8 knobs, 10 buttons, USB-MIDI and Bluetooth MIDI, and upload them over USB like any Arduino
+board. Part of the [open SMC-PAD firmware](https://github.com/fedepaj/open-smc-pad).
 
-    SMCPAD_ARDUINO=1 SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh   # the precompiled core
-    arduino/make_system.sh                                             # -> arduino/smcpad/system, tool links
-    mkdir -p ~/Documents/Arduino/hardware/smcpad
-    ln -sfn $PWD/arduino/smcpad ~/Documents/Arduino/hardware/smcpad/br25
-    arduino-cli compile --fqbn smcpad:br25:smcpad MySketch
-    arduino-cli upload  --fqbn smcpad:br25:smcpad -p /dev/cu.usbmodemXXXX MySketch
+<p align="center"><img src="https://raw.githubusercontent.com/fedepaj/groovebox/main/docs/img/play-mode.gif" width="560" alt="A sketch running on the SMC-PAD (in the emulator)"></p>
 
-Board "M-Vave SMC-PAD (open firmware)" then also shows up in the Arduino IDE. On macOS the JieLi
-tools run under blink (interpreter mode): a first build (core included) ~30 s, then ~7 s;
-upload (1200-baud touch, dfu-util, restart) ~9 s. Needs `python3` and `dfu-util` on the PATH.
+```cpp
+#include <SMCPad.h>
+#include <MIDIUSB.h>
 
-## How it is built
+void padPressed(int pad, int velocity) {
+  MidiUSB.sendMIDI({0x09, 0x99, (uint8_t)(36 + pad), (uint8_t)velocity});
+  SMCPad.padColor(pad, 0, velocity * 2, 0);
+  SMCPad.show();
+}
 
-Build model, verified on the pad (2026-10-20):
+void padReleased(int pad) {
+  MidiUSB.sendMIDI({0x08, 0x89, (uint8_t)(36 + pad), 0});
+  SMCPad.padColor(pad, 0);
+  SMCPad.show();
+}
 
-1. **Once, by us** -- `SMCPAD_ARDUINO=1 SMCPAD_TINYUSB=1 TEXT_BASE=0x1E08120 fw/build.sh`: the JieLi
-   SDK + our runtime (`fw/smcpad/arduino`) go through the SDK's LTO link with `setup`/`loop`
-   left undefined; the native object the LTO step saves (`sdk.elf.o`) is the precompiled core,
-   `fw/smcpad/out/core/smcpad_core.o`, with the linker script next to it. The runtime API
-   (`fw/smcpad/arduino/smcpad_rt.h`, listed in `api.symbols`) stays global because a small
-   non-LTO object references it during that link; everything else of the SDK is internal, so
-   its `delay` & co. cannot clash with Arduino's.
-2. **Per sketch** -- compile the sketch with the JieLi clang (no LTO, `-mllvm -enable-ipra=false`),
-   link it with `smcpad_core.o` + the SDK archives + newlib with plain `ld` (no plugin, a fraction
-   of a second), make `app.bin`, package it as an app area for 0x9000, upload over DFU with the
-   1200-baud touch. `proto/build_sketch.sh` does all of it for `proto/sketch.c`: the sketch prints
-   on the USB serial; re-upload from a running sketch takes ~7 s.
+void setup() {
+  SMCPad.onPadPress(padPressed);
+  SMCPad.onPadRelease(padReleased);
+}
 
-Relinking the LTO output without the plugin reproduces `.text`/`.data`/`.data_code` of the
-normal build byte for byte, which is what makes this sound.
+void loop() {
+  SMCPad.update();
+}
+```
 
-## What a sketch gets (2026-10-20)
+## What you get
 
-- The Arduino API (ArduinoCore-API 1.5.2): `Serial` (USB CDC), digital I/O on pins 0-19
-  (`variants/smcpad/pins_arduino.h`), `millis`/`delay`, `String`, C++ with constructors and
-  `new`. The pads, keys, encoders and LEDs are serviced in the background from before `setup()`.
-- Libraries in `smcpad/libraries` (examples in each):
-  - **SMCPad** -- pads (velocity, pressure), 10 buttons, 8 knobs, button LEDs, RGB pad LEDs;
-    callbacks or polling.
-  - **MIDIUSB** -- Arduino's MIDIUSB API on the core's USB-MIDI interface.
-  - **ArduinoBLE** -- the ArduinoBLE API, peripheral role (services, characteristics typed and
-    string, descriptors, advertising, event handlers) on the runtime's GATT server
-    (`fw/smcpad/arduino/smcpad_ble.c`, see `docs/bluetooth.md`). The central role (scan,
-    connect) compiles but finds nothing.
-  - **BLEMIDI** -- BLE-MIDI on ArduinoBLE with the MIDIUSB API (`sendMIDI`/`read`), plus
-    `noteOn`/`noteOff`/`controlChange`; macOS Audio MIDI Setup connects to it.
-- Every sketch carries the BLE stack (it is in the core object): ~148 KB of the 416 KB area.
+- **The Arduino API** (ArduinoCore-API 1.5): `Serial` on USB, `millis`/`micros` (µs resolution),
+  `delay`, `String`, `snprintf` with floats, C++ with constructors, `new`, `random`.
+- **The hardware, serviced in the background** from before `setup()`: pads scanned ~340 times a
+  second with velocity and continuous pressure, buttons debounced, knobs decoded, LEDs multiplexed.
+- **Libraries** (examples in each):
 
-Next: DIN MIDI on `Serial1` (UART1, PC5), optional USB HID, a real `realloc`, the test suite,
-Windows toolchain, Boards Manager packaging.
+| library | |
+|---|---|
+| **SMCPad** | pads (velocity, pressure), buttons, knobs, button LEDs, RGB pad colours; callbacks or polling |
+| **MIDIUSB** | Arduino's MIDIUSB API on the pad's USB-MIDI port |
+| **BLEMIDI** | MIDI over Bluetooth LE with the same API (macOS, iOS, Android, Windows with a driver) |
+| **ArduinoBLE** | the ArduinoBLE API, peripheral role: your own services and characteristics |
+| **EEPROM** | 4 KB kept in flash across power-off and uploads (`get`/`put`/`commit`, as on ESP32) |
+
+- **Sketches:** [`sketches/SMCPadStock`](sketches/SMCPadStock) behaves like the factory firmware
+  (Performance and DAW/Mackie presets, note repeat, aftertouch …);
+  [GrooveBox](https://github.com/fedepaj/groovebox) is a full step sequencer.
+- **An emulator** ([`sim/`](sim)): any sketch runs on your computer with the real libraries, and
+  scenarios of gestures turn into GIFs.
+- **A self-test** ([`tests/CoreTest`](tests/CoreTest), `host/core_test.sh` in the umbrella):
+  71 checks on the pad, from start-up and timing to flash and BLE.
+
+### Numbering
+
+- **Pads** 0–15, **0 = bottom-left**, row by row upwards (MPC style: note 36 + pad).
+- **Buttons / LEDs** 0–9 in panel order: BT, PAD BANK, KNOB BANK, <, >, PLAY, STOP, REC, SHIFT,
+  NOTE REPEAT.
+- **Knobs** 0–7 = 1–8 as printed (1 bottom-left); clockwise counts up.
+
+### Memory and limits
+
+416 KB of flash for the sketch (every sketch carries the Bluetooth stack: ~145 KB to start
+with), ~100 KB of heap, a 8 KB stack for `setup()`/`loop()`. When the heap runs out the system
+`malloc` does not return NULL: it stops, and the watchdog restarts the pad. Pins: the 20 GPIOs
+are all used by the hardware, so `digitalWrite` and friends exist but are of little use.
+The 3.5 mm MIDI OUT is not driven yet.
+
+## Install
+
+Your pad needs the open firmware's bootloader:
+[installing it](https://github.com/fedepaj/open-smc-pad#install) takes a USB cable and a few
+minutes. Then uploads are like any native-USB Arduino: the IDE resets the pad into the bootloader
+(1200-baud touch) and sends the sketch with `dfu-util`.
+
+**Boards Manager:** coming with the first release (the JieLi compiler cannot be redistributed,
+so the package will fetch it). Until then, the development install:
+
+1. Linux x86-64 or macOS; `python3`, `dfu-util` on the PATH.
+2. The JieLi Linux toolchain from [pkgman.jieliapp.com](http://pkgman.jieliapp.com/doc/all),
+   linked as `smcpad/tools/toolchain`. On macOS it runs through
+   [blink](https://github.com/jart/blink) (built without its VFS, `smcpad/tools/blink/blink`) with a
+   Debian 9 root (`smcpad/tools/blink/root`): `tools/jl.sh` does it.
+3. The precompiled core in `smcpad/system/` (from a release, or built: `fw/build.sh` +
+   `make_system.sh`, see [smc-pad-firmware](https://github.com/fedepaj/smc-pad-firmware)).
+4. `ln -s "$PWD/smcpad" ~/Documents/Arduino/hardware/smcpad/br25`
+
+Board **M-Vave SMC-PAD (open firmware)** then appears in the Arduino IDE, and
+`arduino-cli compile --fqbn smcpad:br25:smcpad MySketch` / `arduino-cli upload ... -p <port>`
+work. A first build takes ~30 s on macOS (the core), then ~7 s; an upload ~9 s.
+
+If a sketch hangs or crashes at start, the bootloader notices (four failed starts) and waits
+for an upload. You can also hold **SHIFT + PLAY** while switching the pad on.
+
+## How it works
+
+The JieLi SDK is closed in parts and built with LTO; mixing Arduino code into it per sketch
+would mean a two-minute LTO link every time. Instead:
+
+1. **Once**: the SDK plus our runtime (`fw/smcpad/arduino`, API in `smcpad_rt.h`) go through the
+   SDK's LTO link with `setup`/`loop` left undefined. The native object the LTO step produces is
+   the **precompiled core** (`system/smcpad_core.o`, with its linker script). The runtime API
+   stays global; everything else of the SDK becomes internal, so its `delay` & co. cannot clash
+   with Arduino's.
+2. **Per sketch**: the sketch, the libraries and `cores/smcpad` are compiled with the JieLi clang
+   (no LTO), linked with the precompiled core by plain `ld` in a fraction of a second, and
+   packed (`tools/smcpad_pack.py`) as an application for the bootloader.
+
+Relinking the LTO output without the plugin reproduces the normal build byte for byte, which is
+what makes this sound. Details and the pitfalls met on the way are in the comments of
+`platform.txt`, `tools/` and the runtime, and in the umbrella's [docs](https://github.com/fedepaj/open-smc-pad/tree/main/docs).
+
+## License
+
+MIT ([LICENSE](LICENSE)). ArduinoCore-API (`cores/smcpad/api`) is LGPL-2.1, from its own repository.
