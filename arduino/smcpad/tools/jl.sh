@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # Run a JieLi pi32v2 tool (clang, clang++, ld, ar, objcopy): natively on Linux x86-64, through
 # blink (x86-64 emulator, interpreter mode: byte-exact, the JIT is not) on macOS.
-#   jl.sh <tool> [args...]
-# Development layout (symlinks next to this script): toolchain/ = jieli-linux-toolchains-*,
-# blink/blink = a non-VFS blink build, blink/root = a Debian 9 (glibc 2.24) sysroot.
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-TC="$(cd "$HERE/toolchain" && pwd -P)"            # real paths: blink does not follow symlinks
-TOOL="$1"; shift
+#   jl.sh <toolchain dir> <host tools dir> <tool> [args...]
+# toolchain dir: jieli-linux-toolchains-*; host tools dir (macOS): blink/blink = a blink build
+# without its VFS, blink/root = the Linux libraries the toolchain links against (glibc 2.24).
+TC="$(cd "$1" && pwd -P)"                         # real paths: blink does not follow symlinks
+HOSTDIR="$(cd "$2" && pwd -P)"
+TOOL="$3"; shift 3
 case "$TOOL" in
     clang)   BIN="$TC/common/bin/clang" ;;
     clang++) BIN="$TC/common/bin/clang"; set -- --driver-mode=g++ "$@" ;;   # clang++ is a symlink
     *)       BIN="$TC/pi32v2/bin/$TOOL" ;;
 esac
-BLINK_BIN="$(readlink "$HERE/blink/blink" || echo "$HERE/blink/blink")"
-BLINK_ROOT="$(cd "$HERE/blink/root" 2>/dev/null && pwd -P)"
+BLINK_BIN="$(readlink "$HOSTDIR/blink/blink" || echo "$HOSTDIR/blink/blink")"
+BLINK_ROOT="$(cd "$HOSTDIR/blink/root" 2>/dev/null && pwd -P)"
 case "$(uname -s)-$(uname -m)" in
     Linux-x86_64) exec "$BIN" "$@" ;;
     Darwin-*)

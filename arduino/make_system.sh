@@ -15,9 +15,19 @@ t, cfg = J.template_and_cfg()            # the SDK's cfg_tool.bin, no vendor ima
 area = J.build_app_area(b"\0" * 0x200, cfg, t, entry_vma=0x1E08120, vm=(0x71000, 0x4000), prct_size=0x71000)
 open(sys.argv[2], "wb").write(area[:0x120] + cfg)
 PY
-T=$ROOT/arduino/smcpad/tools
-ln -sfn "$(ls -d $ROOT/tools/jl-toolchain/jieli-linux-toolchains-*/ | head -1)" $T/toolchain
-mkdir -p $T/blink
-ln -sfn $ROOT/work/blink-src/blink-master/o/blink/blink $T/blink/blink
-ln -sfn $ROOT/work/blink-root9 $T/blink/root
+# development tools: the packer, blink + its Linux root on macOS, and platform.local.txt pointing
+# the platform at them (a Boards Manager install gets them as packages instead)
+H=$ROOT/arduino/smcpad/tools/host
+mkdir -p $H
+cc -O2 -o $H/smcpad_pack $ROOT/arduino/smcpad/tools/smcpad_pack.c
+if [ "$(uname -s)" = Darwin ]; then
+    mkdir -p $H/blink
+    ln -sfn $ROOT/work/blink-src/blink-master/o/blink/blink $H/blink/blink
+    ln -sfn $ROOT/work/blink-root9 $H/blink/root
+fi
+TC="$(ls -d $ROOT/tools/jl-toolchain/jieli-linux-toolchains-*/ | head -1)"
+{ echo "# development install (arduino/make_system.sh): local tools instead of the Boards Manager's"
+  echo "tools.jl.toolchain=${TC%/}"
+  echo "tools.jl.host=$H"
+  echo "tools.dfu-util.cmd=dfu-util"; } > $ROOT/arduino/smcpad/platform.local.txt
 ls -l $S

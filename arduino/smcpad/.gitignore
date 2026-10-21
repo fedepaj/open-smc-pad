@@ -1,3 +1,5 @@
 system/
 tools/toolchain
 tools/blink/
+tools/host/
+platform.local.txt
