@@ -5,7 +5,7 @@
 
 Every line goes to work/con.log with a wall-clock timestamp (ms). When the pad leaves USB the
 log says "---- port gone"; when it comes back the daemon reattaches and the boot report lands
-in the same log. Send commands with host/con.py.
+in the same log. Send commands with host/console.py.
 
 The port must stay open, and through ONE descriptor: with nobody reading, the firmware's CDC
 writes stall and the console stops answering; and closing any second descriptor on the port
@@ -23,7 +23,7 @@ import serial
 NAMES = ("USB Composite Device", "SMC-PAD open fw")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOG = os.path.join(ROOT, "work", "con.log")
-FIFO = os.path.join(ROOT, "work", "con.in")     # host/con.py writes commands here
+FIFO = os.path.join(ROOT, "work", "con.in")     # host/console.py writes commands here
 
 
 def find_port():

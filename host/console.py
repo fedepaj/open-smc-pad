@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Send commands to our firmware's console and show the reply, through host/con_daemon.py.
 
-    host/.venv-serial/bin/python host/con.py [-t SECONDS] [--until REGEX] CMD [CMD ...]
+    host/.venv-serial/bin/python host/console.py [-t SECONDS] [--until REGEX] CMD [CMD ...]
 
 The daemon keeps the port open and logs everything to work/con.log; this writes each command
 to the port and prints the log lines that arrive until SECONDS pass without any (or until a
