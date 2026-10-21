@@ -202,7 +202,14 @@ def render(frames, scenario, out, at=None, scale=1.0):
         f = min(frames, key=lambda f: abs(f["t"] - at))
         image(f).save(out)
         return
-    images = [image(f).convert("P", palette=Image.ADAPTIVE, colors=128) for f in frames]
+    rgb = [image(f) for f in frames]
+    # one palette for the whole animation (from a sample of its frames): no flicker, no banding
+    sample = rgb[:: max(1, len(rgb) // 12)]
+    w, h = rgb[0].size
+    sheet = Image.new("RGB", (w, h * len(sample)))
+    for i, im in enumerate(sample):
+        sheet.paste(im, (0, i * h))
+    palette = sheet.quantize(colors=160, method=Image.Quantize.MEDIANCUT)
+    images = [im.quantize(palette=palette, dither=Image.Dither.NONE) for im in rgb]
     step = frames[1]["t"] - frames[0]["t"] if len(frames) > 1 else 40
-    images[0].save(out, save_all=True, append_images=images[1:], duration=int(step), loop=0, optimize=True,
-                   disposal=1)
+    images[0].save(out, save_all=True, append_images=images[1:], duration=int(step), loop=0, optimize=False)

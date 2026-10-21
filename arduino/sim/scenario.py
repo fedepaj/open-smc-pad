@@ -105,11 +105,14 @@ class Scenario:
         return {"pads_held": pads, "buttons_held": buttons, "knobs_turning": turning, "knob_angle": angle}
 
     def caption_at(self, t):
-        text = None
+        """None: no caption area at all; "" before the first caption (same frame size)."""
+        if not self.captions:
+            return None
+        text = ""
         for start, words in self.captions:
             if start <= t:
                 text = words
-        return text if self.captions else None
+        return text
 
     def text(self):
         return "\n".join(self.lines) + "\n"
