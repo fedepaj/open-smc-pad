@@ -4,14 +4,17 @@
 
 Every picture is a scenario: gestures on the pad, captions. The emulator compiles the real
 sketch (../GrooveBox), so the pictures follow the firmware; rerun after changing it.
-The emulator lives in the Arduino core repository (SMCPAD_SIM, default ../arduino/sim).
+The emulator lives in open-smc-pad (arduino/sim): SMCPAD_SIM, or that repository cloned alongside.
 """
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SIM = os.environ.get("SMCPAD_SIM", os.path.join(ROOT, "..", "arduino", "sim"))
+# the emulator: $SMCPAD_SIM, or open-smc-pad cloned next to this repository
+SIM = os.environ.get("SMCPAD_SIM") or next(
+    (p for p in (os.path.join(ROOT, "..", d, "sim") for d in ("open-smc-pad/arduino", "open_smc_pad/arduino", "arduino"))
+     if os.path.exists(os.path.join(p, "scenario.py"))), "")
 sys.path.insert(0, SIM)
 from scenario import BUTTON, Scenario  # noqa: E402
 

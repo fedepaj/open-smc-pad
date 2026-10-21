@@ -9,11 +9,11 @@ that paints the pads with your Drum Rack.
 <p align="center"><img src="docs/img/hero.gif" width="648" alt="Programming a beat in STEP mode and playing it"></p>
 
 It runs on the SMC-PAD with the [open firmware](https://github.com/fedepaj/open-smc-pad) (our
-bootloader plus the [Arduino core](https://github.com/fedepaj/smc-pad-arduino)); it is an Arduino
+bootloader plus the [Arduino core](https://github.com/fedepaj/open-smc-pad/tree/main/arduino)); it is an Arduino
 sketch, so you can read it, change it and upload your own version.
 
 Everything below — every animation included — comes from the real firmware: the pictures are
-made by running this sketch in the [SMC-PAD emulator](https://github.com/fedepaj/smc-pad-arduino/tree/main/sim)
+made by running this sketch in the [SMC-PAD emulator](https://github.com/fedepaj/open-smc-pad/tree/main/arduino/sim)
 (`tools/make_images.py`).
 
 ---
@@ -36,7 +36,7 @@ firmware over USB, no tools inside the case).
 - **Ready-made:** download `GrooveBox.bin` from the [releases](https://github.com/fedepaj/groovebox/releases)
   and send it to the pad: `dfu-util -d 1209:0002 -a 0 -D GrooveBox.bin` (hold **SHIFT + PLAY**
   while switching the pad on to get the bootloader, or upload from a running firmware).
-- **From the Arduino IDE / arduino-cli:** install the [SMC-PAD core](https://github.com/fedepaj/smc-pad-arduino),
+- **From the Arduino IDE / arduino-cli:** install the [SMC-PAD core](https://github.com/fedepaj/open-smc-pad/tree/main/arduino#install) (Boards Manager),
   open `GrooveBox/GrooveBox.ino`, board **M-Vave SMC-PAD (open firmware)**, Upload.
 
 The pad shows up as a class-compliant USB-MIDI device ("SMC-PAD open fw") and, once Bluetooth
@@ -271,8 +271,9 @@ Over USB and BLE-MIDI at once. (The 3.5 mm MIDI OUT is not driven yet.)
 - `GrooveBox/` is a plain Arduino sketch: `arduino-cli compile --fqbn smcpad:br25:smcpad GrooveBox`.
   `Model.h` the data, `Engine.h` the sequencer (96 PPQN clock, event queue), `Store.h` the
   pattern storage, `GrooveBox.ino` the interface.
-- The emulator runs it on your computer: `../arduino/sim/build.sh GrooveBox` (see its
-  README); `tools/make_images.py` rebuilds every picture of this page from the firmware.
+- The emulator runs it on your computer: with [open-smc-pad](https://github.com/fedepaj/open-smc-pad) cloned
+  next to this repository, `../open-smc-pad/arduino/sim/build.sh GrooveBox` (see its README);
+  `tools/make_images.py` rebuilds every picture of this page from the firmware.
 - Why it is built this way — modes, storage, timing — is in [docs/design.md](docs/design.md).
 
 ## License
